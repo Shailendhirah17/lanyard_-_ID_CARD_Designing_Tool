@@ -1,0 +1,123 @@
+import { Home, Palette, Heart, ShieldCheck, LogOut, GripVertical, BookOpen, Shirt, Layers } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+
+const SidebarLink = ({ icon: Icon, label, active = false, onClick }) => (
+  <div
+    onClick={onClick}
+    className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-all duration-300 group ${
+      active 
+        ? 'bg-[#5d5fef] text-white shadow-[0_6px_15px_rgba(93,95,239,0.25)] rounded-r-2xl' 
+        : 'text-[#b2b2b2] hover:text-[#5d5fef]'
+    }`}
+  >
+    <Icon size={20} className={`${active ? 'text-white' : 'group-hover:text-[#5d5fef]'}`} />
+    <span className="font-semibold text-[14px]">{label}</span>
+    {active && <div className="ml-auto w-1 h-1 rounded-full bg-white shadow-[0_0_6px_white]" />}
+  </div>
+);
+
+export default function Sidebar({ activePage, onNavigate, isAdmin, onLogout, children, onSave, saveMessage }) {
+  const isCustomizer = activePage === 'Customizer';
+  const [width, setWidth] = useState(isCustomizer ? 500 : 240);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Sync width when mode changes
+  useEffect(() => {
+    setWidth(isCustomizer ? 500 : 240);
+  }, [isCustomizer]);
+
+  const startResizing = useCallback((e) => {
+    setIsResizing(true);
+    e.preventDefault();
+  }, []);
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const resize = useCallback((e) => {
+    if (isResizing) {
+      const newWidth = e.clientX;
+      if (newWidth >= 240 && newWidth <= 600) {
+        setWidth(newWidth);
+      }
+    }
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener('mousemove', resize);
+      window.addEventListener('mouseup', stopResizing);
+    } else {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    }
+    return () => {
+      window.removeEventListener('mousemove', resize);
+      window.removeEventListener('mouseup', stopResizing);
+    };
+  }, [isResizing, resize, stopResizing]);
+
+  return (
+    <aside 
+      style={{ width: isCustomizer ? `${width}px` : '240px' }}
+      className={`bg-white h-screen sticky top-0 border-r border-[#f1f1f1] flex flex-col overflow-hidden z-50 group/sidebar relative ${isResizing ? 'transition-none' : 'transition-all duration-300'}`}
+    >
+      {/* Resize Handle — design workspace only */}
+      {isCustomizer ? (
+        <div
+          onMouseDown={startResizing}
+          className={`absolute right-0 top-0 w-1.5 h-full cursor-col-resize hover:bg-[#5d5fef]/30 transition-colors z-50 flex items-center justify-center group ${isResizing ? 'bg-[#5d5fef]/50' : ''}`}
+        >
+          <div className={`w-4 h-8 rounded-full bg-white border border-[#eef2f6] shadow-sm flex items-center justify-center absolute -right-2 opacity-0 group-hover:opacity-100 transition-opacity ${isResizing ? 'opacity-100' : ''}`}>
+            <GripVertical size={10} className="text-[#919191]" />
+          </div>
+        </div>
+      ) : null}
+
+      <div className="p-6 mb-2 shrink-0">
+        <h1 className="text-[22px] font-bold tracking-tight italic flex items-center gap-2 text-[#5d5fef] cursor-pointer whitespace-nowrap" onClick={() => onNavigate('Dashboard')}>
+          MyLanyard
+          <Heart size={20} fill="#5d5fef" />
+        </h1>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto panel-scroll flex flex-col">
+        {isCustomizer ? (
+          <div className="flex flex-col h-full flex-1">
+            <div className="flex-1 flex flex-col min-h-0">
+              {children}
+            </div>
+          </div>
+        ) : (
+          <div className="min-w-[200px] space-y-1.5 pr-3">
+            {!isAdmin && (
+              <>
+                <SidebarLink icon={Home} label="Home" active={activePage === 'Dashboard'} onClick={() => onNavigate('Dashboard')} />
+                <SidebarLink icon={Palette} label="Projects" active={activePage === 'Customizer'} onClick={() => onNavigate('Customizer')} />
+                <SidebarLink icon={BookOpen} label="Learning" active={activePage === 'Learning'} onClick={() => onNavigate('Learning')} />
+              </>
+            )}
+            
+            {isAdmin && (
+              <>
+                <div className="px-5 py-2 mb-2 text-[10px] font-black text-slate-400 uppercase tracking-[2px] whitespace-nowrap">Admin Control</div>
+                <SidebarLink icon={ShieldCheck} label="gotek Management" active={activePage === 'AdminDashboard'} onClick={() => onNavigate('AdminDashboard')} />
+              </>
+            )}
+          </div>
+        )}
+      </nav>
+
+      <div className="p-4 border-t border-[#f1f1f1] bg-white shrink-0">
+        <button 
+          onClick={onLogout}
+          className="flex items-center gap-3 px-5 py-3 w-full text-[#b2b2b2] hover:text-red-500 transition-colors font-semibold text-[14px] whitespace-nowrap"
+        >
+          <LogOut size={20} />
+          Logout
+        </button>
+      </div>
+    </aside>
+  );
+}
