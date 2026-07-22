@@ -4,15 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 const SidebarLink = ({ icon: Icon, label, active = false, onClick }) => (
   <div
     onClick={onClick}
-    className={`flex items-center gap-3 px-5 py-3 cursor-pointer transition-all duration-300 group ${
+    className={`flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg cursor-pointer transition-all duration-200 group ${
       active 
-        ? 'bg-[#5d5fef] text-white shadow-[0_6px_15px_rgba(93,95,239,0.25)] rounded-r-2xl' 
-        : 'text-[#b2b2b2] hover:text-[#5d5fef]'
+        ? 'bg-indigo-600 text-white font-medium shadow-sm' 
+        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-medium'
     }`}
   >
-    <Icon size={20} className={`${active ? 'text-white' : 'group-hover:text-[#5d5fef]'}`} />
-    <span className="font-semibold text-[14px]">{label}</span>
-    {active && <div className="ml-auto w-1 h-1 rounded-full bg-white shadow-[0_0_6px_white]" />}
+    <Icon size={18} className={`${active ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`} />
+    <span className="text-[13px]">{label}</span>
+    {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white opacity-80" />}
   </div>
 );
 
@@ -75,11 +75,16 @@ export default function Sidebar({ activePage, onNavigate, isAdmin, onLogout, chi
         </div>
       ) : null}
 
-      <div className="p-6 mb-2 shrink-0">
-        <h1 className="text-[22px] font-bold tracking-tight italic flex items-center gap-2 text-[#5d5fef] cursor-pointer whitespace-nowrap" onClick={() => onNavigate('Dashboard')}>
-          MyLanyard
-          <Heart size={20} fill="#5d5fef" />
-        </h1>
+      <div className="p-5 mb-1 shrink-0 border-b border-slate-100">
+        <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => onNavigate('Dashboard')}>
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-base shadow-sm">
+            M
+          </div>
+          <div>
+            <h1 className="text-[15px] font-bold text-slate-900 tracking-tight leading-none">MyLanyard</h1>
+            <p className="text-[10px] text-slate-400 font-medium mt-0.5">Enterprise Studio</p>
+          </div>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto panel-scroll flex flex-col">

@@ -49,94 +49,97 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-gradient-to-b from-[#f0f4ff] to-[#f8faff] px-4 py-12 sm:py-16">
-      <div className="w-full max-w-[420px]">
-        <div className="rounded-[28px] border border-[#e8ecf4] bg-white p-8 shadow-xl shadow-slate-200/60 sm:p-10">
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl font-black tracking-tight text-[#5d5fef] sm:text-4xl">MyLanyard</h1>
-            <p className="mt-2 text-sm font-semibold text-[#64748b]">Design your identity today</p>
+    <div className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-slate-50 px-4 py-12">
+      <div className="w-full max-w-[400px]">
+        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="mb-6 text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 font-bold text-white shadow-sm">
+              M
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">MyLanyard Studio</h1>
+            <p className="mt-1 text-xs text-slate-500 font-medium">Enterprise Identity & Card Configurator</p>
           </div>
 
-          <div className="mb-8 flex rounded-2xl border border-[#eef2f6] bg-[#f8faff] p-1">
+          <div className="mb-6 flex rounded-lg border border-slate-200 bg-slate-50 p-1">
             <button
               type="button"
               onClick={() => setActiveTab('login')}
-              className={`flex-1 rounded-xl py-3 text-sm font-black transition-all ${
+              className={`flex-1 rounded-md py-2 text-xs font-semibold transition-all ${
                 activeTab === 'login'
-                  ? 'bg-[#5d5fef] text-white shadow-md shadow-indigo-500/25'
-                  : 'text-[#64748b] hover:text-[#5d5fef]'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Login
+              Sign In
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('signup')}
-              className={`flex-1 rounded-xl py-3 text-sm font-black transition-all ${
+              className={`flex-1 rounded-md py-2 text-xs font-semibold transition-all ${
                 activeTab === 'signup'
-                  ? 'bg-[#5d5fef] text-white shadow-md shadow-indigo-500/25'
-                  : 'text-[#64748b] hover:text-[#5d5fef]'
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
+                  : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              Signup
+              Create Account
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {activeTab === 'signup' && (
               <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#94a3b8]">
-                  <User size={18} />
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                  <User size={16} />
                 </div>
                 <input
                   type="text"
                   placeholder="Full Name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-2xl border border-[#eef2f6] bg-[#f8faff] py-4 pl-11 pr-4 font-bold text-[#1a1a1a] placeholder:text-[#b2b2b2] transition-all focus:outline-none focus:ring-2 focus:ring-[#5d5fef]/25"
+                  className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
                   required
                 />
               </div>
             )}
 
             <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#94a3b8]">
-                <Mail size={18} />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <Mail size={16} />
               </div>
               <input
                 type="email"
-                placeholder="Email Address"
+                placeholder="Work Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-2xl border border-[#eef2f6] bg-[#f8faff] py-4 pl-11 pr-4 font-bold text-[#1a1a1a] placeholder:text-[#b2b2b2] transition-all focus:outline-none focus:ring-2 focus:ring-[#5d5fef]/25"
+                className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
                 required
               />
             </div>
 
             <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-[#94a3b8]">
-                <Lock size={18} />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <Lock size={16} />
               </div>
               <input
                 type="password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-2xl border border-[#eef2f6] bg-[#f8faff] py-4 pl-11 pr-4 font-bold text-[#1a1a1a] placeholder:text-[#b2b2b2] transition-all focus:outline-none focus:ring-2 focus:ring-[#5d5fef]/25"
+                className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition-all focus:border-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-600"
                 required
               />
             </div>
 
             {error && (
-              <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 border border-red-100">{error}</p>
+              <p role="alert" className="rounded-lg bg-red-50 px-3.5 py-2.5 text-xs font-medium text-red-600 border border-red-100">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full rounded-2xl bg-[#5d5fef] py-4 text-lg font-black text-white shadow-lg shadow-indigo-500/25 transition-all hover:bg-[#4a4cd9] active:scale-[0.99] disabled:opacity-60"
+              className="mt-2 w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-[0.99] disabled:opacity-60"
             >
-              {loading ? 'Please wait…' : activeTab === 'login' ? 'Sign In' : 'Create Account'}
+              {loading ? 'Authenticating…' : activeTab === 'login' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 

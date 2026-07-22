@@ -21,7 +21,8 @@ import {
   MousePointer2,
   Layout,
   Box,
-  Layers
+  Layers,
+  User
 } from 'lucide-react';
 
 import { useEffect, useState, useRef, useCallback, memo } from 'react';
@@ -205,6 +206,10 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
                   <StudentWearPreview lanyardColor={design.lanyardColor} idCardSize={design.idCard.size} />
                 </div>
               </div>
+            ) : activePreviewTab === 'student' ? (
+              <div className="relative z-10 w-full h-full flex items-center justify-center p-4 overflow-y-auto">
+                <StudentWearPreview lanyardColor={design.lanyardColor} idCardSize={design.idCard.size} />
+              </div>
             ) : isIdCardStep && activePreviewTab === 'idcard' ? (
               <div className="relative z-10 w-full h-full flex items-center justify-center">
                 <div className="absolute inset-0 z-40 bg-transparent pointer-events-none" onContextMenu={(e) => e.preventDefault()} />
@@ -278,10 +283,11 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
 
         {/* Floating Toggle Buttons (Lanyard / ID Card) */}
         <div className="absolute inset-0 z-50 pointer-events-none">
-          {isIdCardStep && !isExpanded && (
-            <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/90 backdrop-blur-sm border border-[#eef2f6] rounded-[14px] p-1 shadow-md pointer-events-auto">
-              <button onClick={() => setActivePreviewTab('lanyard')} className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[11px] font-bold ${activePreviewTab === 'lanyard' ? 'bg-[#5d5fef] text-white' : 'text-[#919191] hover:bg-[#f8faff]'}`}><LayoutTemplate size={14} /> Lanyard</button>
-              <button onClick={() => setActivePreviewTab('idcard')} className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[11px] font-bold ${activePreviewTab === 'idcard' ? 'bg-[#5d5fef] text-white' : 'text-[#919191] hover:bg-[#f8faff]'}`}><CreditCard size={14} /> ID Card</button>
+          {!isExpanded && (
+            <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/90 backdrop-blur-sm border border-[#eef2f6] rounded-[14px] p-1 shadow-md pointer-events-auto z-30">
+              <button type="button" onClick={() => setActivePreviewTab('lanyard')} className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${activePreviewTab === 'lanyard' ? 'bg-[#5d5fef] text-white shadow-sm' : 'text-[#919191] hover:bg-[#f8faff]'}`}><LayoutTemplate size={14} /> Lanyard</button>
+              <button type="button" onClick={() => setActivePreviewTab('idcard')} className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${activePreviewTab === 'idcard' ? 'bg-[#5d5fef] text-white shadow-sm' : 'text-[#919191] hover:bg-[#f8faff]'}`}><CreditCard size={14} /> ID Card</button>
+              <button type="button" onClick={() => setActivePreviewTab('student')} className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${activePreviewTab === 'student' ? 'bg-[#5d5fef] text-white shadow-sm' : 'text-[#919191] hover:bg-[#f8faff]'}`}><User size={14} /> Avatar Try-On</button>
             </div>
           )}
 

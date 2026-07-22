@@ -37,18 +37,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const isAuthEndpoint =
-        error.config?.url?.includes('/auth/login') ||
-        error.config?.url?.includes('/auth/register');
-
-      if (!isAuthEndpoint) {
-        // Token is invalid/expired — clear storage and redirect to login
-        localStorage.removeItem('gotek_token');
-        localStorage.removeItem('gotek_user');
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
-        }
-      }
+      localStorage.removeItem('gotek_token');
+      localStorage.removeItem('gotek_user');
     }
     return Promise.reject(error);
   },
