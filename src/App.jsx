@@ -20,7 +20,7 @@ const IdCardPro = lazy(() => import('./pages/IdCardPro'));
 const StrapEditor = lazy(() => import('./components/StrapEditor'));
 const IdCardEditor = lazy(() => import('./components/IdCardEditor'));
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
 
 // LANYARD-402: Attach JWT to upload requests
 async function uploadFile(file) {
@@ -48,12 +48,13 @@ export default function App() {
   const [zoom, setZoom] = useState(0.65);
 
   // LANYARD-401: Derive auth state from context instead of parallel localStorage state
-  const { user, signIn, signOut } = useAuth();
+  const { user, isLoading, signOut, updateUser } = useAuth();
 
   const handleLogin = (userData) => {
-    // Called by Login.jsx after successful API response — no-op here since
-    // authService already sets gotek_token/gotek_user and useAuth reads them.
-    // Navigation is handled below via user dependency.
+    // Login.jsx has already called authService.login() which set localStorage.
+    // We must also push userData into AuthContext so `if (!user)` becomes false
+    // and the app navigates away from the Login screen.
+    updateUser(userData);
     if (userData.isAdmin) {
       setActivePage('AdminDashboard');
     } else {
@@ -354,6 +355,18 @@ export default function App() {
         return <Dashboard onNavigate={setActivePage} user={user} />;
     }
   };
+
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] w-full items-center justify-center bg-[#f8faff]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#5d5fef] border-t-transparent" />
+          <p className="text-sm font-semibold text-slate-500">Loading…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (

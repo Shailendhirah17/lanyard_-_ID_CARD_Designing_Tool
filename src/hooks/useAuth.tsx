@@ -70,8 +70,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateUser = (updatedFields: Partial<User>) => {
-    if (!user) return;
-    const newUser = { ...user, ...updatedFields };
+    // Allow updateUser to work even when user is null (fresh login path).
+    // In that case we treat updatedFields as the full user object.
+    const newUser = { ...(user ?? {}), ...updatedFields } as User;
     localStorage.setItem('gotek_user', JSON.stringify(newUser));
     setUser(newUser);
   };
