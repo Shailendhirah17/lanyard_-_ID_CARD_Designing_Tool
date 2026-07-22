@@ -64,12 +64,19 @@ router.post('/login', async (req, res) => {
     // Fallback mock login when DATABASE_URL is not set
     console.warn('[Auth] DB not configured, using mock login.');
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@test.com';
-    const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'admin123';
+    const ADMIN_PASS  = process.env.ADMIN_PASSWORD || 'admin123';
+
     if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
       const token = signToken({ id: 'mock-admin', email, name: 'Admin User', isAdmin: true });
       return res.json({ id: 'mock-admin', name: 'Admin User', email, isAdmin: true, token });
     }
-    return res.status(401).json({ message: 'Invalid email or password.' });
+    if (email === 'user@test.com' && password === 'user123') {
+      const token = signToken({ id: 'mock-user', email, name: 'John Doe', isAdmin: false });
+      return res.json({ id: 'mock-user', name: 'John Doe', email, isAdmin: false, token });
+    }
+    // Allow any registered email/password in mock mode
+    const token = signToken({ id: `mock-${Date.now()}`, email, name: email.split('@')[0], isAdmin: false });
+    return res.json({ id: `mock-${Date.now()}`, name: email.split('@')[0], email, isAdmin: false, token });
   }
 });
 

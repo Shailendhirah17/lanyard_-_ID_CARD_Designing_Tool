@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Mail, Lock, User, ShieldCheck } from 'lucide-react';
+import { authService } from '../services/authService';
 
 export default function Login({ onLogin }) {
   const [activeTab, setActiveTab] = useState('login');
@@ -14,26 +15,13 @@ export default function Login({ onLogin }) {
     setError('');
     setLoading(true);
     try {
-      const endpoint = activeTab === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const body = activeTab === 'login'
-        ? { email, password }
-        : { name, email, password };
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || 'Authentication failed.');
-        return;
-      }
-      // Store JWT token and user profile
-      localStorage.setItem('gotek_token', data.token);
-      localStorage.setItem('gotek_user', JSON.stringify(data));
-      onLogin(data);
-    } catch {
-      setError('Unable to connect to server. Please try again.');
+      const user = activeTab === 'login'
+        ? await authService.login({ email, password })
+        : await authService.register({ name, email, password });
+      onLogin(user);
+    } catch (err) {
+      const msg = err?.response?.data?.message || err?.message || 'Authentication failed.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

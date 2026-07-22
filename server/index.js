@@ -61,8 +61,15 @@ const app = express();
 
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) cb(null, true);
-    else cb(new Error('CORS: Origin not allowed.'));
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+    ) {
+      cb(null, true);
+    } else {
+      cb(new Error('CORS: Origin not allowed.'));
+    }
   },
   credentials: true,
 }));
@@ -85,7 +92,7 @@ app.post('/api/design-requests', createDesignRequest);       // LANYARD-301
 app.use(errorHandler);
 
 // ─── Server ──────────────────────────────────────────────────────────────────
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 4001;
 app.listen(port, () => {
   logger.info(`Lanyard configurator API listening on http://localhost:${port}`);
 });
