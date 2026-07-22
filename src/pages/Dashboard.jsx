@@ -26,6 +26,7 @@ import {
   Zap,
   Mail,
   Phone,
+  Layers,
 } from 'lucide-react';
 import { formatCurrency } from '../lib/pricing';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
