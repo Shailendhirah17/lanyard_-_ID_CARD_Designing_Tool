@@ -218,51 +218,42 @@ export default function Dashboard({ onNavigate, user }) {
   return (
     <div className="min-h-screen bg-[#f8faff]">
       <div className="dash-page max-w-7xl mx-auto space-y-8">
-        {/* Promotional Banner */}
-        <div className="bg-gradient-to-r from-[#5d5fef] to-[#82e9ff] rounded-2xl p-4 text-white flex flex-col sm:flex-row items-center justify-between shadow-lg shadow-[#5d5fef]/20 gap-4">
-          <div className="flex items-center gap-3">
-            <Sparkles size={28} className="text-white animate-pulse" />
+        {/* Intent Selection Banner Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:border-indigo-500 transition-all flex flex-col justify-between">
             <div>
-              <h2 className="font-black text-xl md:text-2xl tracking-tight">Experience free lanyard tool</h2>
-              <p className="text-xs font-medium text-white/90">Design, customize, and preview your lanyards in interactive 3D.</p>
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
+                <Palette size={20} />
+              </div>
+              <h2 className="text-lg font-bold text-slate-900">Custom Design Studio</h2>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Design custom lanyards and ID cards with real-time 3D canvas and student avatar previews.
+              </p>
             </div>
-          </div>
-          <div className="flex gap-3 shrink-0 flex-wrap">
-            <button 
-              onClick={() => {
-                resetDesign();
-                onNavigate('Customizer');
-              }} 
-              className="bg-white text-[#5d5fef] px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-[#f8faff] hover:scale-105 transition-all shadow-md"
+            <button
+              onClick={() => { resetDesign(); onNavigate('Customizer'); }}
+              className="mt-6 w-full rounded-lg bg-indigo-600 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
             >
-              Start Designing
-            </button>
-            <button 
-              onClick={() => onNavigate('Customizer')} 
-              className="bg-transparent text-white border-2 border-white px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider hover:bg-white/10 hover:scale-105 transition-all shadow-md"
-            >
-              Resume Designing
+              Start New Design <ArrowRight size={14} />
             </button>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-xl">
-            <h1 className="text-2xl font-black tracking-tight text-[#1a1a1a] md:text-3xl">
-              Welcome back,{' '}
-              <span className="text-[#007bff]">{user?.name?.split(' ')[0] || 'Designer'}</span>
-            </h1>
-            <p className="mt-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-              <ShieldCheck size={14} className="text-[#28a745]" />
-              Verified account — strap and badge tools stay synced with your saved draft.
-            </p>
-          </div>
-          <div className="dash-workflow-strip rounded-2xl border border-[#eef2f6] bg-white px-4 py-3 shadow-sm">
-            <span className="step font-black text-[#007bff]">Template selection</span>
-            <ChevronRight size={14} className="text-slate-300" aria-hidden="true" />
-            <span className="step">Design workspace</span>
-            <ChevronRight size={14} className="text-slate-300" aria-hidden="true" />
-            <span className="step">Export &amp; order</span>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm hover:border-indigo-500 transition-all flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                <Layers size={20} />
+              </div>
+              <h2 className="text-lg font-bold text-slate-900">Bulk Institutional Order</h2>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                For schools, colleges, and companies. Upload student/staff lists and batch-match photos automatically.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate('IdCardPro')}
+              className="mt-6 w-full rounded-lg bg-slate-900 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+            >
+              Open Bulk Batch Hub <ArrowRight size={14} />
+            </button>
           </div>
         </div>
 

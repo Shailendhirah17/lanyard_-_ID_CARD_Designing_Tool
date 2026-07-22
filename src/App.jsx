@@ -385,7 +385,7 @@ export default function App() {
             onClose={(saved) => {
               setEditingStrapZone(null);
               if (saved && autoNextAfterEditor) {
-                setCurrentStep(prev => Math.min(prev + 1, 3));
+                setCurrentStep(prev => Math.min(prev + 1, 2));
               }
               setAutoNextAfterEditor(false);
             }} 

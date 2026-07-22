@@ -98,16 +98,16 @@ export default function Sidebar({ activePage, onNavigate, isAdmin, onLogout, chi
           <div className="min-w-[200px] space-y-1.5 pr-3">
             {!isAdmin && (
               <>
-                <SidebarLink icon={Home} label="Home" active={activePage === 'Dashboard'} onClick={() => onNavigate('Dashboard')} />
-                <SidebarLink icon={Palette} label="Projects" active={activePage === 'Customizer'} onClick={() => onNavigate('Customizer')} />
-                <SidebarLink icon={BookOpen} label="Learning" active={activePage === 'Learning'} onClick={() => onNavigate('Learning')} />
+                <SidebarLink icon={Home} label="Dashboard & Orders" active={activePage === 'Dashboard'} onClick={() => onNavigate('Dashboard')} />
+                <SidebarLink icon={Palette} label="Design Studio" active={activePage === 'Customizer'} onClick={() => onNavigate('Customizer')} />
+                <SidebarLink icon={Layers} label="Bulk Institution Order" active={activePage === 'IdCardPro'} onClick={() => onNavigate('IdCardPro')} />
               </>
             )}
             
             {isAdmin && (
               <>
-                <div className="px-5 py-2 mb-2 text-[10px] font-black text-slate-400 uppercase tracking-[2px] whitespace-nowrap">Admin Control</div>
-                <SidebarLink icon={ShieldCheck} label="gotek Management" active={activePage === 'AdminDashboard'} onClick={() => onNavigate('AdminDashboard')} />
+                <div className="px-4 py-2 mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Admin Area</div>
+                <SidebarLink icon={ShieldCheck} label="Order Management" active={activePage === 'AdminDashboard'} onClick={() => onNavigate('AdminDashboard')} />
               </>
             )}
           </div>

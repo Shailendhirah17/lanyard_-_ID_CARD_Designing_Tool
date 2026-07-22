@@ -339,10 +339,9 @@ export default function CustomizationPanel({ currentStep, setCurrentStep, onSubm
   };
 
   const steps = [
-    { title: 'Strap & Hardware', subtitle: 'Lanyard dimensions & clips', icon: Ruler },
-    { title: 'Strap Design', subtitle: 'Colors, logos & patterns', icon: Palette },
-    { title: 'ID Card Designer', subtitle: 'Design your identity card', icon: CreditCard },
-    { title: 'Review & Order', subtitle: 'Check your design', icon: ShoppingBag },
+    { title: 'Strap & Hardware', subtitle: 'Colors, logo, text & clips', icon: Palette },
+    { title: 'ID Card Designer', subtitle: 'Choose layout & details', icon: CreditCard },
+    { title: 'Quantity & Order', subtitle: 'Pricing & checkout', icon: ShoppingBag },
   ];
 
   const goNext = () => setCurrentStep(Math.min(steps.length - 1, currentStep + 1));
