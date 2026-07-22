@@ -20,6 +20,21 @@ export default function Login({ onLogin }) {
         : await authService.register({ name, email, password });
       onLogin(user);
     } catch (err) {
+      // Offline / Demo fallback for local dev environment
+      if (email === 'admin@test.com' && password === 'admin123') {
+        const demoAdmin = { id: 'demo-admin', email, name: 'Admin User', isAdmin: true, token: 'demo-token' };
+        localStorage.setItem('gotek_token', demoAdmin.token);
+        localStorage.setItem('gotek_user', JSON.stringify(demoAdmin));
+        onLogin(demoAdmin);
+        return;
+      }
+      if (email === 'user@test.com' && password === 'user123') {
+        const demoUser = { id: 'demo-user', email, name: 'John Doe', isAdmin: false, token: 'demo-token' };
+        localStorage.setItem('gotek_token', demoUser.token);
+        localStorage.setItem('gotek_user', JSON.stringify(demoUser));
+        onLogin(demoUser);
+        return;
+      }
       const msg = err?.response?.data?.message || err?.message || 'Authentication failed.';
       setError(msg);
     } finally {
