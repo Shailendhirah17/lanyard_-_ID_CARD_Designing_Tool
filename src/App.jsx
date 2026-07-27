@@ -1,21 +1,19 @@
 import { useMemo, useRef, useState, useEffect, lazy, Suspense } from 'react';
 import CustomizationPanel from './components/CustomizationPanel';
 import PreviewPanel from './components/PreviewPanel';
-import Sidebar from './components/Sidebar';
-import DashboardHeader from './components/DashboardHeader';
+import TopNav from './components/TopNav';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
-import MobileNav from './components/MobileNav';
 import { calculatePricing, formatCurrency } from './lib/pricing';
 import { useConfiguratorStore } from './store/useConfiguratorStore';
-import { Save, PlusCircle, CheckCircle2, X, FileText, Calendar, Truck, ShieldCheck, Mail, Loader2 } from 'lucide-react';
+import { PlusCircle, CheckCircle2, X, FileText, Calendar, Truck, ShieldCheck, Loader2 } from 'lucide-react';
 import ToastContainer, { showToast } from './components/Toast';
 import { useAuth } from './hooks/useAuth';
 
-// LANYARD-501: Code-split heavy pages and modal editors with React.lazy
+// Code-split heavy pages
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
-const Learning = lazy(() => import('./pages/Learning'));
-const StudentPreviewSection = lazy(() => import('./components/StudentPreviewSection'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Templates = lazy(() => import('./pages/Templates'));
 const IdCardPro = lazy(() => import('./pages/IdCardPro'));
 const StrapEditor = lazy(() => import('./components/StrapEditor'));
 const IdCardEditor = lazy(() => import('./components/IdCardEditor'));
@@ -325,12 +323,19 @@ export default function App() {
         return user?.isAdmin ? <AdminDashboard /> : <Dashboard onNavigate={setActivePage} user={user} />;
       case 'Dashboard':
         return <Dashboard onNavigate={setActivePage} user={user} />;
-      case 'Learning':
-        return <Learning onNavigate={setActivePage} />;
+      case 'Templates':
+        return <Templates onNavigate={setActivePage} />;
+      case 'Orders':
+        return <Orders user={user} />;
       case 'Customizer':
         return (
-          <div className="flex flex-col h-full lg:block">
-            <div className="flex-1 min-h-[50vh] lg:h-full relative shrink-0">
+          <div className="flex h-full">
+            {/* Left: Controls Panel */}
+            <div className="hidden lg:flex w-[340px] xl:w-[380px] shrink-0 border-r border-slate-200 bg-white overflow-y-auto flex-col">
+              {customizationPanel}
+            </div>
+            {/* Right: Preview Canvas */}
+            <div className="flex-1 min-h-0 relative">
               <PreviewPanel 
                 stageRef={stageRef} 
                 idCardStageRef={idCardStageRef} 
@@ -340,16 +345,15 @@ export default function App() {
                 onEditStrap={(zone) => setEditingStrapZone(zone)}
               />
             </div>
-            <div className="lg:hidden flex-1 border-t border-slate-200 bg-white">
+            {/* Mobile: controls below preview */}
+            <div className="lg:hidden absolute bottom-0 left-0 right-0 border-t border-slate-200 bg-white max-h-[50vh] overflow-y-auto">
               {customizationPanel}
             </div>
           </div>
         );
-      case 'StudentWear':
-        return <StudentPreviewSection />;
-      case 'Validation':
-      case 'BulkCustomizer':
       case 'IdCardPro':
+      case 'BulkCustomizer':
+      case 'Validation':
         return <IdCardPro />;
       default:
         return <Dashboard onNavigate={setActivePage} user={user} />;
@@ -377,7 +381,16 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-[#f8faff] lg:flex-row">
+    <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-slate-50">
+      {/* Persistent Top Navigation */}
+      <TopNav
+        activePage={activePage}
+        onNavigate={setActivePage}
+        user={user}
+        onLogout={handleLogout}
+        isAdmin={user.isAdmin}
+      />
+
       <Suspense fallback={null}>
         {editingStrapZone && (
           <StrapEditor 
@@ -391,68 +404,27 @@ export default function App() {
             }} 
           />
         )}
-
         {isEditingIdCard && (
-          <IdCardEditor 
-            onClose={() => setIsEditingIdCard(false)} 
-          />
+          <IdCardEditor onClose={() => setIsEditingIdCard(false)} />
         )}
       </Suspense>
 
-      <>
-          {/* Sidebar for Desktop */}
-          <div className="hidden lg:block">
-            <Sidebar 
-              activePage={activePage} 
-              onNavigate={setActivePage} 
-              isAdmin={user.isAdmin} 
-              onLogout={handleLogout}
-              onSave={handleSaveDraft}
-              saveMessage={saveMessage}
-            >
-              {activePage === 'Customizer' && customizationPanel}
-            </Sidebar>
-          </div>
-
-          {/* Mobile Nav for Tablet/Mobile */}
-          <MobileNav 
-            activePage={activePage} 
-            onNavigate={setActivePage} 
-            isAdmin={user.isAdmin} 
-            onLogout={handleLogout}
-            user={user}
-          />
-          
-          <main className="relative min-h-0 flex-1 overflow-y-auto custom-scrollbar">
-            {(activePage === 'Dashboard' || activePage === 'AdminDashboard' || activePage === 'Learning') && (
-              <div className="p-4 lg:p-8 pb-0">
-                <DashboardHeader
-                  user={user}
-                  breadcrumb={
-                    activePage === 'Dashboard'
-                      ? 'Home > Dashboard > Overview'
-                      : activePage === 'Learning'
-                        ? 'Home > Learning'
-                        : activePage === 'StudentWear'
-                          ? 'Home > Student Wear Preview'
-                          : 'Home > Admin > Overview'
-                  }
-                />
-              </div>
-            )}
-            
-            <div className={(activePage === 'Customizer' || activePage === 'StudentWear') ? 'h-full' : 'p-4 lg:p-8 pt-0'}>
-              <Suspense fallback={
-                <div className="flex min-h-[400px] items-center justify-center">
-                  <div className="flex items-center gap-3 rounded-2xl bg-white px-6 py-4 shadow-lg border border-slate-100 text-[#5d5fef]">
-                    <Loader2 size={24} className="animate-spin" />
-                    <span className="font-bold text-sm text-slate-700">Loading module…</span>
-                  </div>
-                </div>
-              }>
-                {renderPage()}
-              </Suspense>
+      {/* Main content area — fills remaining height */}
+      <main className={`relative flex-1 min-h-0 ${
+        activePage === 'Customizer' ? 'overflow-hidden' : 'overflow-y-auto'
+      }`}>
+        <Suspense fallback={
+          <div className="flex min-h-[400px] items-center justify-center">
+            <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-xl shadow-sm border border-slate-200">
+              <Loader2 size={20} className="animate-spin text-indigo-600" />
+              <span className="text-sm font-medium text-slate-700">Loading…</span>
             </div>
+          </div>
+        }>
+          <div className={activePage === 'Customizer' ? 'h-full' : ''}>
+            {renderPage()}
+          </div>
+        </Suspense>
 
             {submitState.orderDetails && (
               <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in p-4 overflow-y-auto">
@@ -532,21 +504,20 @@ export default function App() {
               </div>
             )}
             
-            <ToastContainer />
-            
-            {submitState.error && submitState.message && (
-              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-full shadow-lg z-[110] flex items-center gap-3">
-                <span className="text-sm font-bold">{submitState.message}</span>
-                <button 
-                  onClick={() => setSubmitState({ ...submitState, message: '', error: false })}
-                  className="bg-white/20 p-1 rounded-full hover:bg-white/30"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-          </main>
-        </>
+        <ToastContainer />
+        
+        {submitState.error && submitState.message && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg z-[110] flex items-center gap-3">
+            <span className="text-sm font-medium">{submitState.message}</span>
+            <button 
+              onClick={() => setSubmitState({ ...submitState, message: '', error: false })}
+              className="bg-white/20 p-1 rounded-full hover:bg-white/30"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

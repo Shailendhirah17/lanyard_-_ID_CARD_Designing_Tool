@@ -25,3 +25,4 @@ pnpm-debug.log*
 
 # Cursor / Editor
 .cursor/
+data/
