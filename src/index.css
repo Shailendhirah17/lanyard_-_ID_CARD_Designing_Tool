@@ -1,22 +1,21 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;600&family=Roboto:wght@400;500;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;600&family=Roboto:wght@400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 @import "./styles/dashboard-design-system.css";
 @import "./styles/learning.css";
 
 :root {
-  --primary: #5d5fef;
-  --primary-hover: #4a4cd9;
-  --secondary: #82e9ff;
-  --bg-main: #f8faff;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --secondary: #0ea5e9;
+  --bg-main: #f8fafc;
   --bg-card: #ffffff;
-  --text-main: #1a1a1a;
-  --text-muted: #919191;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
   --sidebar-width: 240px;
   
   color: var(--text-main);
   background: var(--bg-main);
-  font-family: 'Montserrat', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
