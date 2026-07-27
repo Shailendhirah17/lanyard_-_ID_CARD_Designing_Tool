@@ -36,7 +36,6 @@ import { Group, Layer, Stage } from 'react-konva';
 function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, onEditStrap }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activePreviewTab, setActivePreviewTab] = useState('lanyard'); 
-  const [isBlurred, setIsBlurred] = useState(false);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 700 });
   const containerRef = useRef(null);
 
@@ -108,7 +107,6 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
   const isIdCardStep = currentStep === 2 || isReviewStep;
   const idCardState = useConfiguratorStore((state) => state.design.idCard);
 
-  // Editing functionality
   const [editingText, setEditingText] = useState(null);
   const [activeImageUpload, setActiveImageUpload] = useState(null);
   const fileInputRef = useRef(null);
@@ -130,45 +128,6 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
     reader.readAsDataURL(file);
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (
-        e.key === 'PrintScreen' || 
-        (e.ctrlKey && (e.key === 'p' || e.key === 'P' || e.key === 's' || e.key === 'S')) ||
-        (e.ctrlKey && e.shiftKey && (e.key === 's' || e.key === 'S'))
-      ) {
-        e.preventDefault();
-        // Removed intrusive alert
-      }
-      
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-        const { selected, activeSide } = useConfiguratorStore.getState().design.idCard;
-        if (selected) {
-          const elements = useConfiguratorStore.getState().design.idCard[activeSide].elements;
-          useConfiguratorStore.getState().setField(`idCard.${activeSide}.elements`, elements.filter(el => el.id !== selected));
-          useConfiguratorStore.getState().setField('idCard.selected', null);
-        }
-      }
-    };
-    
-    const handleFocus = () => setIsBlurred(false);
-    const handleBlur = () => setIsBlurred(true);
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('blur', handleBlur);
-    const handleContextMenu = (e) => { e.preventDefault(); };
-    window.addEventListener('contextmenu', handleContextMenu);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('contextmenu', handleContextMenu);
-    };
-  }, []);
-
   const cardCount = idCardState.showBothSides ? 2 : 1;
   const gap = 40;
   
@@ -184,35 +143,107 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
   }, [isIdCardStep]);
 
   return (
-    <div className={`flex h-full flex-col ${isBlurred ? 'blur-md' : ''} transition-all duration-300 no-print`}>
+    <div className="flex h-full flex-col bg-slate-900 overflow-hidden font-sans select-none">
       <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-      
+
+      {/* Top Professional Canvas Control Bar */}
+      <div className="h-12 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 z-30">
+        {/* Left: View Mode Tabs */}
+        <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+          <button
+            type="button"
+            onClick={() => setActivePreviewTab('lanyard')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+              activePreviewTab === 'lanyard' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <LayoutTemplate size={14} />
+            <span>Lanyard</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePreviewTab('idcard')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+              activePreviewTab === 'idcard' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <CreditCard size={14} />
+            <span>ID Card</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActivePreviewTab('student')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+              activePreviewTab === 'student' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <User size={14} />
+            <span>Avatar Try-On</span>
+          </button>
+        </div>
+
+        {/* Right: Viewport Controls */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => useConfiguratorStore.getState().triggerViewReset()}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+            title="Reset 3D View"
+          >
+            <RotateCcw size={15} />
+          </button>
+
+          <div className="h-4 w-px bg-slate-800" />
+
+          <button type="button" onClick={undo} disabled={!canUndo} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition-all cursor-pointer">
+            <Undo2 size={15} />
+          </button>
+          <button type="button" onClick={redo} disabled={!canRedo} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition-all cursor-pointer">
+            <Redo2 size={15} />
+          </button>
+
+          <div className="h-4 w-px bg-slate-800" />
+
+          <div className="flex items-center gap-2 px-2">
+            <ZoomIn size={14} className="text-indigo-400" />
+            <input
+              type="range"
+              min="0.5"
+              max="1.5"
+              step="0.05"
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-20 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+            />
+            <ZoomOut size={14} className="text-slate-500" />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-all cursor-pointer ml-2"
+            title="Full Screen Proof"
+          >
+            <Expand size={15} />
+          </button>
+        </div>
+      </div>
+
+      {/* Main 3D Canvas Viewport — Full Height */}
       <div 
         ref={containerRef}
-        className="flex-1 min-h-[400px] md:min-h-[500px] lg:h-[700px] xl:h-full w-full rounded-[32px] bg-[#f0f2f5] relative overflow-hidden shrink-0 border border-[#eef2f6] shadow-sm select-none"
+        className="flex-1 w-full relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
       >
-        <ThreeDBackground className={isBlurred ? 'blur-sm grayscale opacity-50 transition-all duration-500' : 'transition-all duration-500'}>
-          <div className={`absolute inset-0 flex items-center justify-center z-10`}>
-            {isReviewStep ? (
-              <div className="w-full h-full flex flex-col gap-6 overflow-y-auto p-4 bg-transparent panel-scroll relative z-10">
-                <div className="flex-1 flex items-center justify-center min-h-[550px] relative">
-                  <div className="absolute top-6 right-8 flex items-center justify-center z-20 group">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/5 hover:bg-black/10 backdrop-blur-md rounded-full border border-black/5 transition-all text-black/40 hover:text-indigo-600">
-                      <span className="text-[10px] font-black uppercase tracking-widest">3D PROOF</span>
-                      <RotateCw size={12} className="group-hover:rotate-180 transition-transform duration-700" />
-                    </div>
-                  </div>
-                  <LanyardStage zoom={zoom} stageRef={stageRef} currentStep={currentStep} showIdCard={true} onEditStrap={onEditStrap} />
-                  <StudentWearPreview lanyardColor={design.lanyardColor} idCardSize={design.idCard.size} />
-                </div>
-              </div>
-            ) : activePreviewTab === 'student' ? (
+        <ThreeDBackground className="w-full h-full">
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            {activePreviewTab === 'student' ? (
               <div className="relative z-10 w-full h-full flex items-center justify-center p-4 overflow-y-auto">
                 <StudentWearPreview lanyardColor={design.lanyardColor} idCardSize={design.idCard.size} />
               </div>
             ) : isIdCardStep && activePreviewTab === 'idcard' ? (
               <div className="relative z-10 w-full h-full flex items-center justify-center">
-                <div className="absolute inset-0 z-40 bg-transparent pointer-events-none" onContextMenu={(e) => e.preventDefault()} />
                 <Stage width={containerSize.width} height={containerSize.height} scaleX={zoom} scaleY={zoom} ref={idCardStageRef}>
                   <Layer>
                     <Group x={cx} y={cy} scaleX={cardScale} scaleY={cardScale}>
@@ -262,106 +293,49 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
                     style={{
                       position: 'absolute', top: editingText.y, left: editingText.x, width: editingText.width, height: editingText.height,
                       fontSize: editingText.fontSize, fontFamily: 'sans-serif', fontWeight: editingText.fontStyle?.includes('bold') ? 'bold' : 'normal',
-                      color: editingText.color, background: 'rgba(255, 255, 255, 0.8)', border: '2px solid #5d5fef', zIndex: 100,
+                      color: editingText.color, background: 'rgba(255, 255, 255, 0.9)', border: '2px solid #4f46e5', zIndex: 100,
                     }}
                   />
                 )}
               </div>
             ) : (
-            <div className="relative z-10 w-full h-full flex items-center justify-center">
-              <div className="absolute top-6 right-8 flex items-center justify-center z-20 group">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/5 hover:bg-black/10 backdrop-blur-md rounded-full border border-black/5 transition-all text-black/40 hover:text-indigo-600">
-                  <span className="text-[10px] font-black uppercase tracking-widest">3D</span>
-                  <RotateCw size={12} className="group-hover:rotate-180 transition-transform duration-700" />
-                </div>
+              <div className="relative z-10 w-full h-full flex items-center justify-center">
+                <LanyardStage stageRef={stageRef} zoom={zoom} currentStep={currentStep} onEditStrap={onEditStrap} />
               </div>
-              <LanyardStage stageRef={stageRef} zoom={zoom} currentStep={currentStep} onEditStrap={onEditStrap} />
-            </div>
             )}
           </div>
         </ThreeDBackground>
-
-        {/* Floating Toggle Buttons (Lanyard / ID Card) */}
-        <div className="absolute inset-0 z-50 pointer-events-none">
-          {!isExpanded && (
-            <div className="absolute top-4 left-4 flex items-center gap-1 bg-white/90 backdrop-blur-sm border border-[#eef2f6] rounded-[14px] p-1 shadow-md pointer-events-auto z-30">
-              <button type="button" onClick={() => setActivePreviewTab('lanyard')} className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${activePreviewTab === 'lanyard' ? 'bg-[#5d5fef] text-white shadow-sm' : 'text-[#919191] hover:bg-[#f8faff]'}`}><LayoutTemplate size={14} /> Lanyard</button>
-              <button type="button" onClick={() => setActivePreviewTab('idcard')} className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${activePreviewTab === 'idcard' ? 'bg-[#5d5fef] text-white shadow-sm' : 'text-[#919191] hover:bg-[#f8faff]'}`}><CreditCard size={14} /> ID Card</button>
-              <button type="button" onClick={() => setActivePreviewTab('student')} className={`flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${activePreviewTab === 'student' ? 'bg-[#5d5fef] text-white shadow-sm' : 'text-[#919191] hover:bg-[#f8faff]'}`}><User size={14} /> Avatar Try-On</button>
-            </div>
-          )}
-
-          {!isExpanded && (
-            <div className="absolute top-4 right-4 flex items-center gap-2 pointer-events-auto">
-              <div className="flex items-center bg-white/90 backdrop-blur-sm border border-[#eef2f6] rounded-[14px] p-1 shadow-md">
-
-                <button 
-                  type="button" 
-                  onClick={() => useConfiguratorStore.getState().triggerViewReset()}
-                  className={`p-1.5 rounded-[10px] transition-all flex items-center justify-center ${activePreviewTab === 'lanyard' ? 'text-[#5d5fef] hover:bg-[#5d5fef] hover:text-white' : 'text-slate-300 pointer-events-none'}`}
-                  title="Reset 3D View"
-                >
-                  <RotateCcw size={14} />
-                </button>
-                <div className="w-[1px] h-4 bg-[#eef2f6] mx-1" />
-                <button type="button" onClick={undo} disabled={!canUndo} className="p-1.5 rounded-[10px] text-[#1a1a1a] hover:bg-[#5d5fef] hover:text-white disabled:opacity-30 transition-all"><Undo2 size={14} /></button>
-                <button type="button" onClick={redo} disabled={!canRedo} className="p-1.5 rounded-[10px] text-[#1a1a1a] hover:bg-[#5d5fef] hover:text-white disabled:opacity-30 transition-all"><Redo2 size={14} /></button>
-                <div className="w-[1px] h-4 bg-[#eef2f6] mx-1" />
-                <div className="flex items-center gap-2 px-2">
-                  <ZoomIn size={14} className="text-[#5d5fef]" />
-                  <input type="range" min="0.5" max="1.5" step="0.05" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} className="w-16 h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#5d5fef]" />
-                  <ZoomOut size={14} className="text-[#919191]" />
-                </div>
-              </div>
-              <button type="button" onClick={() => setIsExpanded(true)} className="p-2 bg-[#5d5fef] text-white rounded-[12px] shadow-md hover:bg-[#4a4cd9] transition-all flex items-center justify-center"><Expand size={16} /></button>
-            </div>
-          )}
-          
-        </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { icon: MousePointer2, label: 'Technical Accuracy', sub: 'Production Ready' },
-          { icon: Move, label: 'Real-time Sync', sub: 'Instant updates' },
-          { icon: CreditCard, label: 'Secured Design', sub: 'Protected Proof' },
-        ].map((item, i) => (
-          <div key={i} onClick={item.onClick} className="flex items-center gap-4 p-4 rounded-[24px] bg-[#f8faff] border border-[#eef2f6] hover:bg-white transition-all cursor-pointer">
-            <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white text-[#5d5fef] shadow-sm"><item.icon size={18} /></div>
-            <div><p className="text-[14px] font-bold text-[#1a1a1a]">{item.label}</p><p className="text-[12px] text-[#919191]">{item.sub}</p></div>
-          </div>
-        ))}
-      </div>
-
+      {/* Fullscreen Review Modal */}
       {isExpanded && createPortal(
-        <div className={`fixed inset-0 z-[999999] flex items-center justify-center bg-[#0f172a] select-none p-4 ${isBlurred ? 'blur-2xl' : ''}`}>
-          <div className="w-full h-full bg-white rounded-[40px] shadow-2xl flex flex-col overflow-hidden relative border border-white/20">
-            <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 bg-white/80 backdrop-blur-md z-[100] shrink-0">
-              <div className="flex flex-col"><h3 className="text-[20px] font-extrabold text-[#1a1a1a]">Production Proof Review</h3><p className="text-[13px] text-slate-500 font-medium">Technical verification · Scroll to Zoom, Drag to Pan</p></div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-2xl p-1.5 shadow-sm">
-                  <button onClick={() => setFullZoom(Math.max(0.2, fullZoom - 0.2))} className="p-2 text-slate-500 hover:text-indigo-600 rounded-xl"><ZoomOut size={18} /></button>
-                  <span className="text-[13px] font-bold text-slate-700 w-16 text-center">{Math.round(fullZoom * 100)}%</span>
-                  <button onClick={() => setFullZoom(Math.min(5, fullZoom + 0.2))} className="p-2 text-slate-500 hover:text-indigo-600 rounded-xl"><ZoomIn size={18} /></button>
-                  <div className="w-[1px] h-6 bg-slate-200 mx-2"></div>
-                  <button onClick={() => { setFullZoom(1); setFullPan({x:0, y:0}); useConfiguratorStore.getState().triggerViewReset(); }} className="px-4 py-2 text-[12px] font-bold text-slate-600 rounded-xl hover:bg-white transition-all">Reset</button>
-                </div>
-                <button onClick={() => setIsExpanded(false)} className="p-2.5 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl transition-all shadow-sm"><X size={20} /></button>
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-950 p-4">
+          <div className="w-full h-full bg-slate-900 rounded-2xl flex flex-col overflow-hidden border border-slate-800">
+            <div className="px-6 py-4 flex items-center justify-between border-b border-slate-800 bg-slate-950 shrink-0">
+              <div>
+                <h3 className="text-base font-bold text-white">Full Screen Production Proof</h3>
+                <p className="text-xs text-slate-400 font-medium">Scroll to Zoom · Drag to Pan Artwork Proof</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => { setFullZoom(1); setFullPan({x:0, y:0}); }} className="px-3 py-1.5 text-xs font-bold text-slate-300 bg-slate-800 rounded-lg hover:bg-slate-700">
+                  Reset View
+                </button>
+                <button onClick={() => setIsExpanded(false)} className="p-2 bg-rose-500/20 text-rose-400 hover:bg-rose-600 hover:text-white rounded-lg transition-colors">
+                  <X size={18} />
+                </button>
               </div>
             </div>
 
-            <div className="flex-1 relative bg-[#fafafa] overflow-hidden cursor-grab active:cursor-grabbing" onWheel={handleFullWheel} onPointerDown={handleFullPointerDown} onPointerMove={handleFullPointerMove} onPointerUp={handleFullPointerUp} onPointerLeave={handleFullPointerUp}>
-              {/* Watermark removed as requested */}
-              <div className="absolute inset-0 z-50 bg-transparent pointer-events-none" onContextMenu={(e) => e.preventDefault()} />
-              <div className="absolute inset-0 flex items-center justify-center transition-transform duration-75 ease-out" style={{ transform: `translate(${fullPan.x}px, ${fullPan.y}px) scale(${fullZoom})` }}>
-                <div className="flex flex-col md:flex-row items-center justify-center gap-16 p-20 select-none">
-                  <div className="bg-white rounded-[40px] border border-slate-100 p-12 shadow-[0_10px_40px_rgba(0,0,0,0.04)]"><LanyardStage stageRef={null} zoom={1.5} currentStep={currentStep} /></div>
-                  {isIdCardStep && (
-                    <div className="bg-white rounded-[40px] border border-slate-100 p-12 shadow-[0_10px_40px_rgba(0,0,0,0.04)]">
-                      <Stage width={800} height={800} scaleX={1} scaleY={1}><Layer><Group x={(800 - (totalW * cardScale)) / 2} y={(800 - (totalH * cardScale)) / 2} scaleX={cardScale} scaleY={cardScale}><IdCardPreview isReviewStep={true} onSelectElement={() => {}} onUpdateElement={() => {}} /></Group></Layer></Stage>
-                    </div>
-                  )}
-                </div>
+            <div 
+              className="flex-1 relative bg-slate-950 overflow-hidden cursor-grab active:cursor-grabbing flex items-center justify-center" 
+              onWheel={handleFullWheel} 
+              onPointerDown={handleFullPointerDown} 
+              onPointerMove={handleFullPointerMove} 
+              onPointerUp={handleFullPointerUp} 
+              onPointerLeave={handleFullPointerUp}
+            >
+              <div className="transition-transform duration-75 ease-out" style={{ transform: `translate(${fullPan.x}px, ${fullPan.y}px) scale(${fullZoom})` }}>
+                <LanyardStage stageRef={null} zoom={1.3} currentStep={currentStep} />
               </div>
             </div>
           </div>
