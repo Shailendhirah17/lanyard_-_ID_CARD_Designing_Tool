@@ -33,9 +33,9 @@ import StudentWearPreview from './StudentWearPreview';
 import ThreeDBackground from './ThreeDBackground';
 import { Group, Layer, Stage } from 'react-konva';
 
-function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, onEditStrap }) {
+function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, onEditStrap, projectType = 'lanyard' }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activePreviewTab, setActivePreviewTab] = useState('lanyard'); 
+  const [activePreviewTab, setActivePreviewTab] = useState(projectType === 'id-card' ? 'idcard' : 'lanyard'); 
   const [containerSize, setContainerSize] = useState({ width: 800, height: 700 });
   const containerRef = useRef(null);
 
@@ -98,40 +98,35 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
     setIsDragging(false);
   };
 
-  const undo = useConfiguratorStore((state) => state.undo);
-  const redo = useConfiguratorStore((state) => state.redo);
-  const canUndo = useConfiguratorStore((state) => state.past.length > 0);
-  const canRedo = useConfiguratorStore((state) => state.future.length > 0);
-
   const isReviewStep = currentStep === 3;
-  const isIdCardStep = currentStep === 2 || isReviewStep;
-  const idCardState = useConfiguratorStore((state) => state.design.idCard);
-
-  const [editingText, setEditingText] = useState(null);
-  const [activeImageUpload, setActiveImageUpload] = useState(null);
+  const isIdCardStep = (currentStep === 2 || isReviewStep) && projectType === 'id-card';
+  const editingText = useConfiguratorStore(s => s.editingText);
+  const setEditingText = useConfiguratorStore(s => s.setEditingText);
   const fileInputRef = useRef(null);
+  const [activeImageUpload, setActiveImageUpload] = useState(null);
+  const idCardState = design.idCard;
+
+  const undo = useConfiguratorStore(s => s.undo);
+  const redo = useConfiguratorStore(s => s.redo);
+  const canUndo = useConfiguratorStore(s => (s.past ? s.past.length > 0 : false));
+  const canRedo = useConfiguratorStore(s => (s.future ? s.future.length > 0 : false));
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file || !activeImageUpload) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      const dataUrl = event.target.result;
+      const url = event.target.result;
       const { id, sideName } = activeImageUpload;
-      const side = sideName || useConfiguratorStore.getState().design.idCard.activeSide;
-      const elements = useConfiguratorStore.getState().design.idCard[side].elements;
-      const newElements = elements.map(el => el.id === id ? { ...el, src: dataUrl } : el);
-      useConfiguratorStore.getState().setField(`idCard.${side}.elements`, newElements);
+      const elements = idCardState[sideName].elements;
+      useConfiguratorStore.getState().setField(`idCard.${sideName}.elements`, elements.map(el => el.id === id ? { ...el, src: url } : el));
       setActiveImageUpload(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     };
     reader.readAsDataURL(file);
   };
 
-  const cardCount = idCardState.showBothSides ? 2 : 1;
-  const gap = 40;
-  
-  const totalW = isHorizontal ? baseCardW : ((baseCardW * cardCount) + (gap * (cardCount - 1)));
+  const gap = 30;
+  const totalW = (isHorizontal || !idCardState.showBothSides) ? (isHorizontal ? baseCardW : baseCardW) : ((baseCardW * 2) + gap);
   const totalH = (isHorizontal && idCardState.showBothSides) ? ((baseCardH * 2) + gap) : baseCardH;
   const cardScale = Math.min(Math.min(750 / totalW, 600 / totalH), 2.2); 
   
@@ -161,27 +156,31 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
             <span>Lanyard</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setActivePreviewTab('idcard')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-              activePreviewTab === 'idcard' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <CreditCard size={14} />
-            <span>ID Card</span>
-          </button>
+          {projectType !== 'lanyard' && (
+            <>
+              <button
+                type="button"
+                onClick={() => setActivePreviewTab('idcard')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                  activePreviewTab === 'idcard' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <CreditCard size={14} />
+                <span>ID Card</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => setActivePreviewTab('student')}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
-              activePreviewTab === 'student' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <User size={14} />
-            <span>Avatar Try-On</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setActivePreviewTab('student')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                  activePreviewTab === 'student' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <User size={14} />
+                <span>Avatar Try-On</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Right: Viewport Controls */}

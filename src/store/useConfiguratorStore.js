@@ -36,6 +36,17 @@ const defaultDesign = {
   customTextCenter: '',
   customTextRight: '',
   customTextSecondary: '',
+  text: '',
+  textLine2: '',
+  textLine3: '',
+  textLines: [],
+  textLineSpacing: 4,
+  textReverseMode: 'production',
+  textColor: '#ffffff',
+  textStrokeWidth: 0,
+  textStrokeColor: '#000000',
+  textShadowBlur: 0,
+  letterSpacing: 0,
   lanyardDesignStyle: 'repeated', // 'repeated', 'central-logo', 'stacked-text'
   patternOffset: 0,
   textOffset: 0,
@@ -98,10 +109,7 @@ const defaultDesign = {
     },
     front: {
       backgroundColor: '#ffffff',
-      elements: [
-        { id: 'name', type: 'text', content: 'FULL NAME', x: 10, y: 80, width: 224, fontSize: 20, fill: '#000000', align: 'center', fontStyle: 'bold' },
-        { id: 'title', type: 'text', content: 'Job Title', x: 10, y: 105, width: 224, fontSize: 14, fill: '#000000', align: 'center' },
-      ],
+      elements: [],
     },
     back: {
       backgroundColor: '#ffffff',

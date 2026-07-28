@@ -1,22 +1,43 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Upload, Package, Palette, ArrowRight, Clock, CheckCircle2, Box, Truck, LayoutTemplate, FileSpreadsheet, ChevronRight, Calendar, Layers, ShieldCheck, Activity, FileText, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Plus, Package, LayoutTemplate, FileSpreadsheet, ArrowRight,
+  CheckCircle2, Clock, MoreHorizontal, Trash2, Copy, ExternalLink,
+  ChevronRight, TrendingUp, Layers, Activity, Search, Filter,
+  CreditCard, Link2, BadgeCheck, Zap, Sparkles
+} from 'lucide-react';
 import { formatCurrency } from '../lib/pricing';
+import { useProjectStore } from '../store/useProjectStore';
 
-const STATUS_BADGES = {
-  Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  Processing: 'bg-blue-50 text-blue-700 border-blue-200',
-  Shipping: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  'Out for Delivery': 'bg-purple-50 text-purple-700 border-purple-200',
-  Delivered: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+const ROUTE_MAP = {
+  Dashboard: '/dashboard', NewProject: '/new-project', Editor: '/editor',
+  Templates: '/templates', Orders: '/orders', AdminDashboard: '/admin',
+  Customizer: '/studio', IdCardPro: '/bulk-import', ExportFlow: '/export',
 };
 
+// ---- Status colours ----
+const STATUS_BADGES = {
+  Pending:          'bg-amber-50 text-amber-700 border-amber-200',
+  Processing:       'bg-blue-50 text-blue-700 border-blue-200',
+  Shipping:         'bg-indigo-50 text-indigo-700 border-indigo-200',
+  'Out for Delivery':'bg-purple-50 text-purple-700 border-purple-200',
+  Delivered:        'bg-emerald-50 text-emerald-700 border-emerald-200',
+};
 const STATUS_STEPS = ['Pending', 'Processing', 'Shipping', 'Out for Delivery', 'Delivered'];
 
-const SAMPLE_PROJECTS = [
-  { id: 'PRJ-101', name: 'GOTEK School Kit', date: '2026-07-18', status: 'DRAFT', color: '#4f46e5', category: 'Education', cardsCount: 250 },
-  { id: 'PRJ-102', name: 'Corporate Blue ID', date: '2026-07-15', status: 'ORDERED', color: '#0284c7', category: 'Corporate', cardsCount: 150 },
-  { id: 'PRJ-103', name: 'Tech Innovator', date: '2026-07-10', status: 'DRAFT', color: '#059669', category: 'Event', cardsCount: 80 },
-];
+const PROJECT_COLORS = {
+  'id-card': 'from-indigo-500 to-blue-600',
+  lanyard:   'from-purple-500 to-pink-600',
+  badge:     'from-emerald-500 to-teal-600',
+  combo:     'from-orange-500 to-rose-600',
+};
+
+const PROJECT_ICONS = {
+  'id-card': CreditCard,
+  lanyard:   Link2,
+  badge:     BadgeCheck,
+  combo:     Layers,
+};
 
 function getGreeting(name) {
   const h = new Date().getHours();
@@ -24,323 +45,374 @@ function getGreeting(name) {
   return `${g}${name ? `, ${name.split(' ')[0]}` : ''}`;
 }
 
-export default function Dashboard({ onNavigate, user }) {
+function timeAgo(iso) {
+  if (!iso) return '';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+// ---- Project Card ----
+function ProjectCard({ project, onOpen, onDuplicate, onDelete }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const Icon = PROJECT_ICONS[project.type] || CreditCard;
+  const gradClass = PROJECT_COLORS[project.type] || 'from-indigo-500 to-blue-600';
+
+  return (
+    <div
+      onClick={() => onOpen(project)}
+      className="group relative bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer overflow-hidden"
+    >
+      {/* Thumbnail area */}
+      <div className={`h-28 bg-gradient-to-br ${gradClass} flex items-center justify-center relative overflow-hidden`}>
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-2 right-2 w-20 h-20 rounded-full bg-white/30 blur-2xl" />
+          <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full bg-white/20 blur-2xl" />
+        </div>
+        {/* Card mockup */}
+        <div className="relative z-10 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl w-20 h-14 flex flex-col items-center justify-center gap-1 shadow-xl group-hover:scale-105 transition-transform">
+          <Icon size={16} className="text-white" />
+          <div className="w-10 h-1 rounded-full bg-white/60" />
+          <div className="w-7 h-0.5 rounded-full bg-white/40" />
+        </div>
+        {/* Type badge */}
+        <div className="absolute top-2.5 left-2.5 bg-black/20 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-full capitalize">
+          {project.type?.replace('-', ' ')}
+        </div>
+        {/* Status badge */}
+        <div className={`absolute top-2.5 right-2.5 text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+          project.status === 'ORDERED' ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-white/20 text-white border-white/30'
+        }`}>
+          {project.status}
+        </div>
+      </div>
+
+      {/* Info section */}
+      <div className="p-3.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
+              {project.name}
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5 font-medium">
+              {timeAgo(project.lastEdited)} · {project.cardsCount || 1} cards
+            </p>
+          </div>
+          {/* More menu */}
+          <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-slate-100 transition-all"
+            >
+              <MoreHorizontal size={13} className="text-slate-500" />
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-xl py-1 z-20">
+                  <button onClick={() => { setMenuOpen(false); onOpen(project); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-slate-600 hover:bg-slate-50 transition-colors">
+                    <ExternalLink size={12} className="text-slate-400" /> Open
+                  </button>
+                  <button onClick={() => { setMenuOpen(false); onDuplicate(project.id); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-slate-600 hover:bg-slate-50 transition-colors">
+                    <Copy size={12} className="text-slate-400" /> Duplicate
+                  </button>
+                  <div className="border-t border-slate-100 my-1" />
+                  <button onClick={() => { setMenuOpen(false); onDelete(project.id); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-[12px] text-red-500 hover:bg-red-50 transition-colors">
+                    <Trash2 size={12} /> Delete
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---- Main Dashboard ----
+export default function Dashboard({ user }) {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
-  const [savedProjects, setSavedProjects] = useState(SAMPLE_PROJECTS);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  const { projects, duplicateProject, deleteProject, setActiveProject, loadProject } = useProjectStore();
+
+  const greeting = getGreeting(user?.name);
+  const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
 
   useEffect(() => {
     const load = () => {
       const all = JSON.parse(localStorage.getItem('myLanyardOrders') || '[]');
       const userEmail = user?.email || '';
-      const mine = all.filter(o => o.userEmail === userEmail);
-      setOrders(mine.slice(0, 5));
+      setOrders(all.filter(o => o.userEmail === userEmail).slice(0, 3));
     };
     load();
     window.addEventListener('orderStatusUpdated', load);
     return () => window.removeEventListener('orderStatusUpdated', load);
   }, [user]);
 
-  const activeOrders = useMemo(() => orders.filter(o => o.status !== 'Delivered'), [orders]);
-  const greeting = getGreeting(user?.name);
-  const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const filteredProjects = useMemo(() => {
+    return projects.filter(p => {
+      const matchType = typeFilter === 'all' || p.type === typeFilter;
+      const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
+      return matchType && matchSearch;
+    });
+  }, [projects, typeFilter, search]);
+
+  const handleOpenProject = (project) => {
+    setActiveProject(project);
+    navigate('/editor');
+  };
+
+  const handleNewProject = () => {
+    navigate('/new-project');
+  };
 
   return (
-    <div className="max-w-6xl mx-auto py-6 px-4 lg:px-0 space-y-6 font-sans text-slate-900">
-      
-      {/* Executive Workspace Header */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span>Enterprise Workspace</span>
-            <span>·</span>
-            <span>{currentDate}</span>
-          </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">{greeting}</h1>
-          <p className="text-xs text-slate-500 mt-0.5 font-medium">Manage lanyard specifications, institutional roster batch runs, and live orders.</p>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 space-y-6 font-sans">
 
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            onClick={() => onNavigate('Customizer')}
-            className="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm cursor-pointer"
-          >
-            <Plus size={15} />
-            <span>New Custom Design</span>
-          </button>
-          <button
-            onClick={() => onNavigate('IdCardPro')}
-            className="flex items-center gap-2 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm cursor-pointer"
-          >
-            <Upload size={15} />
-            <span>Roster Processor</span>
-          </button>
-        </div>
-      </div>
+      {/* ── HERO HEADER ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 md:p-8 text-white shadow-xl">
+        {/* Ambient glows */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-16 w-48 h-48 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Enterprise KPI Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: 'Active Draft Specs', val: `${savedProjects.filter(p => p.status === 'DRAFT').length} Specifications`, icon: Layers, color: 'text-indigo-600' },
-          { label: 'Roster Capacity', val: '10,000 Cards/Batch', icon: FileSpreadsheet, color: 'text-emerald-600' },
-          { label: 'Active Orders', val: `${activeOrders.length} In Production`, icon: Package, color: 'text-amber-600' },
-          { label: 'System Health', val: 'Operational (100%)', icon: Activity, color: 'text-emerald-500' },
-        ].map((kpi, i) => {
-          const Icon = kpi.icon;
-          return (
-            <div key={i} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{kpi.label}</span>
-                <Icon size={16} className={kpi.color} />
-              </div>
-              <p className="text-sm font-bold text-slate-900 font-mono">{kpi.val}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Dual Primary Workflow Launchers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
-        {/* Launcher 1: Single Design Studio */}
-        <div 
-          onClick={() => onNavigate('Customizer')}
-          className="bg-white border border-slate-200 border-l-4 border-l-indigo-600 rounded-xl p-6 shadow-sm hover:border-slate-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
-        >
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs border border-indigo-100">
-                01
-              </div>
-              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                Studio Spec
-              </span>
+            <div className="flex items-center gap-2 text-indigo-300 text-[11px] font-semibold mb-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{currentDate}</span>
             </div>
-
-            <h2 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-              Custom Lanyard & ID Card Studio
-            </h2>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed font-medium">
-              Configure custom strap specs, Pantone colors, clip hardware, and ID card artwork with real-time 3D rendering.
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight">{greeting} 👋</h1>
+            <p className="text-slate-400 text-[13px] mt-1">
+              {projects.length} project{projects.length !== 1 ? 's' : ''} · {orders.length} active order{orders.length !== 1 ? 's' : ''}
             </p>
-
-            <ul className="mt-4 space-y-2 text-xs text-slate-600 font-medium">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 size={13} className="text-indigo-600 shrink-0" />
-                <span>Interactive 2D & 3D Strap/Card Canvas</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 size={13} className="text-indigo-600 shrink-0" />
-                <span>Student / Employee Wear Avatar Try-On</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 size={13} className="text-indigo-600 shrink-0" />
-                <span>Instant Tiered Volume Pricing & Order Submission</span>
-              </li>
-            </ul>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-semibold text-indigo-600 group-hover:underline">Open Design Studio</span>
-            <ArrowRight size={15} className="text-indigo-600 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-
-        {/* Launcher 2: Institutional Roster Processor */}
-        <div 
-          onClick={() => onNavigate('IdCardPro')}
-          className="bg-white border border-slate-200 border-l-4 border-l-emerald-600 rounded-xl p-6 shadow-sm hover:border-slate-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xs border border-emerald-100">
-                02
-              </div>
-              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                Bulk Batch Roster
-              </span>
-            </div>
-
-            <h2 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-              Institutional Roster Processor
-            </h2>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed font-medium">
-              Upload Excel/CSV student or employee rosters, map data columns to card templates, and auto-generate batch ID cards.
-            </p>
-
-            <ul className="mt-4 space-y-2 text-xs text-slate-600 font-medium">
-              <li className="flex items-center gap-2">
-                <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                <span>CSV Roster Spreadsheet & Column Auto-Mapping</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                <span>Batch Student Photo Cropping & Alignment</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                <span>High-Volume Institutional Print PDF Export</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-600 group-hover:underline">Launch Roster Processor</span>
-            <ArrowRight size={15} className="text-emerald-600 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </div>
-
-      </div>
-
-      {/* Quick Access Tools */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {[
-          { icon: LayoutTemplate, label: 'Template Gallery', sub: '50+ Enterprise ID Layouts', page: 'Templates' },
-          { icon: FileSpreadsheet, label: 'Roster Batch Engine', sub: 'Institutional CSV Importer', page: 'IdCardPro' },
-          { icon: Package, label: 'Orders & Tracking', sub: 'Production Status & Invoices', page: 'Orders' },
-        ].map((item, i) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={i}
-              onClick={() => onNavigate(item.page)}
-              className="flex items-center gap-3.5 p-3.5 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all text-left cursor-pointer group"
-            >
-              <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200">
-                <Icon size={17} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{item.label}</p>
-                <p className="text-[11px] text-slate-500 truncate font-medium">{item.sub}</p>
-              </div>
-              <ArrowRight size={13} className="text-slate-300 ml-auto shrink-0 group-hover:text-slate-600 transition-colors" />
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Recent Specifications / Projects */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-slate-900 tracking-tight">Saved Specifications & Projects</h2>
-            <p className="text-[11px] text-slate-500 font-medium">Recent artwork drafts and active project files</p>
-          </div>
           <button
-            onClick={() => onNavigate('Templates')}
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer"
+            onClick={handleNewProject}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-900 rounded-xl font-bold text-[13px] hover:bg-indigo-50 transition-all shadow-lg shrink-0 group"
           >
-            <span>View Template Library</span>
-            <ChevronRight size={14} />
+            <Plus size={16} className="group-hover:rotate-90 transition-transform" />
+            New Project
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {savedProjects.map((prj) => (
-            <div
-              key={prj.id}
-              onClick={() => onNavigate('Customizer')}
-              className="flex items-center justify-between p-3.5 bg-slate-50/50 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-indigo-300 transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div 
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shrink-0 shadow-sm"
-                  style={{ backgroundColor: prj.color }}
-                >
-                  ID
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">{prj.name}</p>
-                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">{prj.id} · {prj.category}</p>
-                </div>
+        {/* Quick stats */}
+        <div className="relative mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Total Projects', val: projects.length, icon: Layers, color: 'text-indigo-300' },
+            { label: 'In Production', val: orders.length, icon: Package, color: 'text-amber-300' },
+            { label: 'Cards Created', val: projects.reduce((a, p) => a + (p.cardsCount || 0), 0).toLocaleString(), icon: CreditCard, color: 'text-emerald-300' },
+            { label: 'Platform', val: 'Operational', icon: Activity, color: 'text-green-400' },
+          ].map(({ label, val, icon: Icon, color }) => (
+            <div key={label} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{label}</span>
+                <Icon size={13} className={color} />
               </div>
-
-              <span className={`text-[9px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider shrink-0 ml-2 ${
-                prj.status === 'ORDERED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-200/60 text-slate-700 border-slate-300'
-              }`}>
-                {prj.status}
-              </span>
+              <p className="text-[18px] font-black text-white">{val}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Production Orders & Fulfillment Status */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
+      {/* ── QUICK ACTIONS ROW ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          {
+            icon: LayoutTemplate,
+            label: 'Browse Templates',
+            sub: '50+ professional layouts',
+            color: 'text-indigo-600',
+            bg: 'bg-indigo-50 border-indigo-100',
+            page: 'Templates',
+          },
+          {
+            icon: FileSpreadsheet,
+            label: 'Bulk Roster Import',
+            sub: 'Upload CSV for batch cards',
+            color: 'text-emerald-600',
+            bg: 'bg-emerald-50 border-emerald-100',
+            page: 'IdCardPro',
+          },
+          {
+            icon: Package,
+            label: 'Orders & Tracking',
+            sub: 'View production status',
+            color: 'text-amber-600',
+            bg: 'bg-amber-50 border-amber-100',
+            page: 'Orders',
+          },
+        ].map(({ icon: Icon, label, sub, color, bg, page }) => (
+          <button
+            key={page}
+            onClick={() => navigate(ROUTE_MAP[page])}
+            className={`flex items-center gap-3.5 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all text-left cursor-pointer group ${bg}`}
+          >
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white shadow-sm border ${bg}`}>
+              <Icon size={18} className={color} />
+            </div>
+            <div className="min-w-0">
+              <p className={`text-[13px] font-bold text-slate-900 group-hover:${color} transition-colors`}>{label}</p>
+              <p className="text-[11px] text-slate-500 font-medium">{sub}</p>
+            </div>
+            <ArrowRight size={14} className="text-slate-300 ml-auto group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+          </button>
+        ))}
+      </div>
+
+      {/* ── PROJECTS SECTION ── */}
+      <div>
+        {/* Section header */}
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-sm font-bold text-slate-900 tracking-tight">Fulfillment & Production Orders</h2>
-            <p className="text-[11px] text-slate-500 font-medium">Real-time status of submitted corporate and institutional batches</p>
+            <h2 className="text-[16px] font-black text-slate-900">Your Projects</h2>
+            <p className="text-[12px] text-slate-500 mt-0.5">{filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}</p>
           </div>
-          {orders.length > 0 && (
-            <button
-              onClick={() => onNavigate('Orders')}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer"
-            >
-              <span>Manage All Orders</span>
-              <ChevronRight size={14} />
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Type filter */}
+            <div className="hidden sm:flex gap-1">
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'id-card', label: 'ID Card' },
+                { key: 'lanyard', label: 'Lanyard' },
+                { key: 'badge', label: 'Badge' },
+              ].map(f => (
+                <button key={f.key} onClick={() => setTypeFilter(f.key)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                    typeFilter === f.key ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-indigo-300'
+                  }`}
+                >{f.label}</button>
+              ))}
+            </div>
+            {/* Search */}
+            <div className="relative">
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search…"
+                className="pl-7 pr-3 py-1.5 text-[12px] border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400 w-32"
+              />
+            </div>
+          </div>
         </div>
 
-        {orders.length > 0 ? (
-          <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
-            {orders.map((ord) => {
+        {/* Projects grid */}
+        {filteredProjects.length === 0 ? (
+          <div className="bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
+              <Layers size={28} className="text-indigo-400" />
+            </div>
+            <h3 className="text-[15px] font-bold text-slate-800 mb-1">
+              {search || typeFilter !== 'all' ? 'No projects match' : 'Start your first project'}
+            </h3>
+            <p className="text-[12px] text-slate-500 mb-4">
+              {search || typeFilter !== 'all'
+                ? 'Try adjusting your filters'
+                : 'Create an ID card, lanyard, badge, or combo set'}
+            </p>
+            {(!search && typeFilter === 'all') && (
+              <button
+                onClick={handleNewProject}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[13px] font-bold transition-all shadow-sm"
+              >
+                <Plus size={15} /> New Project
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {/* New project card */}
+            <button
+              onClick={handleNewProject}
+              className="h-full min-h-[160px] flex flex-col items-center justify-center gap-2 bg-white border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/30 rounded-2xl p-4 transition-all group"
+            >
+              <div className="w-10 h-10 rounded-full bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
+                <Plus size={20} className="text-slate-400 group-hover:text-indigo-600 group-hover:rotate-90 transition-all" />
+              </div>
+              <span className="text-[11px] font-semibold text-slate-400 group-hover:text-indigo-600 transition-colors">New Project</span>
+            </button>
+
+            {filteredProjects.map(project => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onOpen={handleOpenProject}
+                onDuplicate={duplicateProject}
+                onDelete={deleteProject}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── ACTIVE ORDERS ── */}
+      {orders.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-[14px] font-black text-slate-900">Active Orders</h2>
+              <p className="text-[11px] text-slate-500">Live production status</p>
+            </div>
+            <button onClick={() => navigate(ROUTE_MAP['Orders'])}
+              className="text-[12px] font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+              View All <ChevronRight size={13} />
+            </button>
+          </div>
+          <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl overflow-hidden">
+            {orders.map(ord => {
               const idx = STATUS_STEPS.indexOf(ord.status);
               const pct = Math.max(20, Math.round(((idx + 1) / STATUS_STEPS.length) * 100));
               return (
-                <div
-                  key={ord.id}
-                  onClick={() => onNavigate('Orders')}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white hover:bg-slate-50/80 transition-colors cursor-pointer gap-3"
-                >
+                <div key={ord.id} onClick={() => navigate(ROUTE_MAP['Orders'])}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-4 hover:bg-slate-50/80 transition-colors cursor-pointer gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
-                      <Package size={16} />
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                      <Package size={15} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold font-mono text-slate-900">{ord.id}</span>
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${STATUS_BADGES[ord.status] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
+                        <span className="text-[12px] font-bold font-mono text-slate-900">{ord.id}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_BADGES[ord.status] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
                           {ord.status}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">{ord.designName} · {ord.quantity} units</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{ord.designName} · {ord.quantity} units</p>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-4 sm:ml-auto">
-                    <div className="w-32 hidden sm:block">
-                      <div className="flex justify-between text-[10px] text-slate-500 font-mono mb-1">
-                        <span>Status</span>
+                    <div className="w-28 hidden sm:block">
+                      <div className="flex justify-between text-[10px] text-slate-400 mb-1">
+                        <span>{ord.status}</span>
                         <span>{pct}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${pct}%` }} />
+                        <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-slate-900 font-mono">{formatCurrency(ord.total)}</span>
-                    <ChevronRight size={15} className="text-slate-400" />
+                    <span className="text-[12px] font-bold text-slate-900">{formatCurrency(ord.total)}</span>
+                    <ChevronRight size={14} className="text-slate-300" />
                   </div>
                 </div>
               );
             })}
           </div>
-        ) : (
-          <div className="text-center py-10 bg-slate-50/50 border border-slate-200/80 rounded-lg">
-            <Package size={28} className="mx-auto text-slate-400 mb-2" />
-            <p className="text-xs font-bold text-slate-700">No Active Production Batches</p>
-            <p className="text-[11px] text-slate-500 mt-0.5 font-medium">Placed orders will track live printing & courier dispatch here.</p>
-            <button
-              onClick={() => onNavigate('Customizer')}
-              className="mt-3 px-4 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer inline-flex items-center gap-1.5"
-            >
-              <Plus size={14} />
-              <span>Create Specification</span>
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
     </div>
   );

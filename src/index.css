@@ -1,22 +1,137 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
 @import "./styles/dashboard-design-system.css";
 @import "./styles/learning.css";
 
 :root {
+  /* Brand */
   --primary: #4f46e5;
   --primary-hover: #4338ca;
   --secondary: #0ea5e9;
+
+  /* Surfaces */
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
+  --bg-editor: #e2e8f0;
+  --bg-dark: #0f172a;
+
+  /* Text */
   --text-main: #0f172a;
   --text-muted: #64748b;
+  --text-subtle: #94a3b8;
+
+  /* Editor layout */
+  --editor-topbar-h: 48px;
+  --editor-toolbar-icon-w: 56px;
+  --editor-panel-w: 224px;
+  --editor-right-panel-w: 256px;
+  --editor-validation-h: 44px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-elevated: 0 4px 24px -2px rgb(79 70 229 / 0.12), 0 2px 8px -2px rgb(0 0 0 / 0.08);
+  --shadow-panel: 2px 0 12px -2px rgb(0 0 0 / 0.08);
+
   --sidebar-width: 240px;
-  
+
   color: var(--text-main);
   background: var(--bg-main);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'DM Sans', system-ui, -apple-system, sans-serif;
 }
+
+/* ---- Editor workspace layout ---- */
+.editor-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-editor);
+}
+
+.editor-topbar {
+  height: var(--editor-topbar-h);
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.editor-left-toolbar {
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.editor-right-panel {
+  width: var(--editor-right-panel-w);
+  background: #fff;
+  border-left: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Premium animations ---- */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pulseRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(79 70 229 / 0.4); }
+  50%       { box-shadow: 0 0 0 8px rgb(79 70 229 / 0); }
+}
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 600px; }
+}
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-fade-up { animation: fadeUp 0.25s ease both; }
+.animate-scale-in { animation: scaleIn 0.2s ease both; }
+.animate-slide-down { animation: slideDown 0.3s ease both; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.15) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+}
+.animate-pulse-ring { animation: pulseRing 2s ease-in-out infinite; }
+
+/* ---- Glass morphism utility ---- */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.glass-dark {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 
 body {
   margin: 0;

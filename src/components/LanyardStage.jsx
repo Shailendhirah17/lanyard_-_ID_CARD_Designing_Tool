@@ -700,6 +700,155 @@ function LanyardStage({
 
   // Points for a V-shape lanyard hanging from top-center
 
+  const textBlocks = useMemo(() => {
+    const list = design.textBlocks || [];
+    if (list.length > 0) return list;
+    const legacy = [design.text || '', design.textLine2 || '', design.textLine3 || ''].filter(Boolean);
+    const hasLegacy = legacy.length > 0;
+    return [{
+      id: 'block-1',
+      text: hasLegacy ? (design.text || '') : 'COMPANY NAME',
+      textLine2: design.textLine2 || '',
+      textLine3: design.textLine3 || '',
+      textOffset: design.textOffset || 0,
+      textYOffset: design.textYOffset || 0,
+      textColor: design.textColor || '#ffffff',
+      fontSize: design.fontSize || 16,
+      letterSpacing: design.letterSpacing || 0,
+      textStrokeWidth: design.textStrokeWidth || 0,
+      textStrokeColor: design.textStrokeColor || '#000000',
+      textShadowBlur: design.textShadowBlur || 0,
+      fontFamily: design.fontFamily || 'Montserrat',
+      fontWeight: design.fontWeight || 'bold',
+    }];
+  }, [design.textBlocks, design.text, design.textLine2, design.textLine3, design.textOffset, design.textYOffset, design.textColor, design.fontSize, design.letterSpacing, design.textStrokeWidth, design.textStrokeColor, design.textShadowBlur, design.fontFamily, design.fontWeight]);
+
+  const continuousItems = useMemo(() => {
+    const leftItems = [];
+    const centerItems = [];
+    const rightItems = [];
+
+    // Calculate segment lengths
+    const distLeft = Math.hypot(leftCL.x2 - leftCL.x1, leftCL.y2 - leftCL.y1);
+    const distCenter = Math.hypot((CX + SPREAD - 10) - (CX - SPREAD + 10), 0);
+    const distRight = Math.hypot(rightCL.x2 - rightCL.x1, rightCL.y2 - rightCL.y1);
+    const totalPathLength = distLeft + distCenter + distRight;
+
+    textBlocks.forEach((block) => {
+      const bText = block.text || '';
+      const bL2 = block.textLine2 || '';
+      const bL3 = block.textLine3 || '';
+      if (!bText && !logoImg) return;
+
+      const lines = [bText, bL2, bL3].filter(Boolean);
+      const fs = Math.min(block.fontSize || 16, strapW * 0.7);
+      const maxLen = lines.length > 0 ? Math.max(...lines.map(l => l.length || 0)) : 0;
+      const textW = maxLen * fs * 1.1;
+      const lgW = logoImg ? (strapW * 0.8 * (logoImg.width / logoImg.height) * (design.logoScale || 1)) : 0;
+
+      const gap = Math.max(30, (design.textSpacing || 60) * 2 + textW + lgW);
+      const count = Math.max(1, Math.floor(800 / gap));
+
+      for (let i = 0; i < count; i++) {
+        // Center repeats along the virtual 800px continuous path
+        const baseDistanceVirtual = (800 / (count + 1)) * (i + 1);
+        let dVirtualText = baseDistanceVirtual + (block.textOffset || 0);
+        dVirtualText = (dVirtualText % 800 + 800) % 800;
+
+        // Map to 3D path distance
+        const dText = dVirtualText * (totalPathLength / 800);
+
+        // Helper to map distance to segment and local t
+        const mapDistanceToSegment = (d) => {
+          if (d < distLeft) {
+            return { zone: 'left', t: 1 - (d / distLeft) };
+          } else if (d < distLeft + distCenter) {
+            return { zone: 'center', t: (d - distLeft) / distCenter };
+          } else {
+            return { zone: 'right', t: (d - distLeft - distCenter) / distRight };
+          }
+        };
+
+        const textPlacement = mapDistanceToSegment(dText);
+        
+        if (bText) {
+          const item = {
+            id: `${block.id}-${i}-text`,
+            block,
+            type: 'text',
+            t: textPlacement.t,
+            i,
+            textW,
+            fs,
+            count,
+          };
+          if (textPlacement.zone === 'left') leftItems.push(item);
+          else if (textPlacement.zone === 'center') centerItems.push(item);
+          else rightItems.push(item);
+        }
+
+        if (logoImg && !design.forceNoLogo) {
+          // Place logo offset relative to virtual coordinates
+          let dVirtualLogo = dVirtualText + (textW + 15) * (800 / totalPathLength);
+          dVirtualLogo = (dVirtualLogo % 800 + 800) % 800;
+          const dLogo = dVirtualLogo * (totalPathLength / 800);
+          const logoPlacement = mapDistanceToSegment(dLogo);
+          const item = {
+            id: `${block.id}-${i}-logo`,
+            block,
+            type: 'logo',
+            t: logoPlacement.t,
+            i,
+            textW,
+            fs,
+            count,
+          };
+          if (logoPlacement.zone === 'left') leftItems.push(item);
+          else if (logoPlacement.zone === 'center') centerItems.push(item);
+          else rightItems.push(item);
+        }
+      }
+    });
+
+    return { leftItems, centerItems, rightItems, distLeft, distCenter, distRight, totalPathLength };
+  }, [textBlocks, logoImg, strapW, design.logoScale, design.textSpacing, design.forceNoLogo, leftCL, rightCL, CX, SPREAD]);
+
+  const onUpdateTextBlockText = (blockId, dX, dY, scale, rotation) => {
+    const updated = textBlocks.map(b => {
+      if (b.id === blockId) {
+        return {
+          ...b,
+          textOffset: dX,
+          textYOffset: dY,
+          fontSize: b.fontSize * (scale || 1),
+        };
+      }
+      return b;
+    });
+    setField('textBlocks', updated);
+    
+    // Backward compatibility sync for block-1
+    if (blockId === 'block-1') {
+      setField('textOffset', dX);
+      setField('textYOffset', dY);
+      setField('fontSize', design.fontSize * (scale || 1));
+    }
+  };
+
+  const onRemoveTextBlock = (blockId) => {
+    if (textBlocks.length <= 1) {
+      const updated = [{ ...textBlocks[0], text: '' }];
+      setField('textBlocks', updated);
+      setField('text', '');
+      return;
+    }
+    const updated = textBlocks.filter(b => b.id !== blockId);
+    setField('textBlocks', updated);
+    if (blockId === 'block-1') {
+      setField('text', updated[0]?.text || '');
+    }
+  };
+
   const onUpdateText = (dX, dY, zone, scale, rotation) => {
     if (design.copyMode === 'synchronized') {
       setField('textOffset', dX);
@@ -755,6 +904,7 @@ function LanyardStage({
   };
 
   const [selectedShape, setSelectedShape] = useState(null);
+  const [isDraggingElement, setIsDraggingElement] = useState(false);
   const trRef = useRef();
   const layerRef = useRef();
 
@@ -844,14 +994,14 @@ function LanyardStage({
       ) : null}
 
       <motion.div
-        drag
+        drag={!isDraggingElement}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        onDrag={handleDrag}
+        onDrag={isDraggingElement ? undefined : handleDrag}
         style={{
           rotateX: springRotateX,
           rotateY: springRotateY,
           perspective: 1000,
-          cursor: 'grab'
+          cursor: isDraggingElement ? 'default' : 'grab'
         }}
         whileDrag={{ cursor: 'grabbing' }}
         className="relative w-full h-full flex justify-center items-center"
@@ -882,7 +1032,23 @@ function LanyardStage({
                     if (onEditStrap) onEditStrap('right');
                   }}
                 />
-                <UnifiedStrapContent {...rightCL} design={design} logoImg={logoImg} strapW={strapW} onUpdateText={onUpdateText} onUpdateLogo={onUpdateLogo} onRemoveText={onRemoveText} onRemoveLogo={onRemoveLogo} showControls={showControls} zone="right" />
+                <UnifiedStrapContent 
+                  {...rightCL} 
+                  design={design} 
+                  items={continuousItems.rightItems} 
+                  logoImg={logoImg} 
+                  strapW={strapW} 
+                  onUpdateText={onUpdateTextBlockText} 
+                  onUpdateLogo={onUpdateLogo} 
+                  onRemoveText={onRemoveTextBlock} 
+                  onRemoveLogo={onRemoveLogo} 
+                  showControls={showControls} 
+                  zone="right" 
+                  setIsDraggingElement={setIsDraggingElement}
+                  distLeft={continuousItems.distLeft}
+                  distCenter={continuousItems.distCenter}
+                  totalPathLength={continuousItems.totalPathLength}
+                />
                 <CustomElements3D elements={design.strapElements?.right} strapW={strapW} {...rightCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} isRightStrap={true} dualCanvasMode={design.dualCanvasMode} />
 
                 {/* Top/Center Neck Strap */}
@@ -898,7 +1064,26 @@ function LanyardStage({
                     if (onEditStrap) onEditStrap('center');
                   }}
                 />
-                <UnifiedStrapContent x1={CX - SPREAD + 10} y1={TOP_Y + strapW/2} x2={CX + SPREAD - 10} y2={TOP_Y + strapW/2} design={design} logoImg={logoImg} strapW={strapW} onUpdateText={onUpdateText} onUpdateLogo={onUpdateLogo} onRemoveText={onRemoveText} onRemoveLogo={onRemoveLogo} showControls={showControls} zone="center" />
+                <UnifiedStrapContent 
+                  x1={CX - SPREAD + 10} 
+                  y1={TOP_Y + strapW/2} 
+                  x2={CX + SPREAD - 10} 
+                  y2={TOP_Y + strapW/2} 
+                  design={design} 
+                  items={continuousItems.centerItems} 
+                  logoImg={logoImg} 
+                  strapW={strapW} 
+                  onUpdateText={onUpdateTextBlockText} 
+                  onUpdateLogo={onUpdateLogo} 
+                  onRemoveText={onRemoveTextBlock} 
+                  onRemoveLogo={onRemoveLogo} 
+                  showControls={showControls} 
+                  zone="center" 
+                  setIsDraggingElement={setIsDraggingElement}
+                  distLeft={continuousItems.distLeft}
+                  distCenter={continuousItems.distCenter}
+                  totalPathLength={continuousItems.totalPathLength}
+                />
                 <CustomElements3D elements={design.strapElements?.center} strapW={strapW} x1={CX - SPREAD + 10} y1={TOP_Y + strapW/2} x2={CX + SPREAD - 10} y2={TOP_Y + strapW/2} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
 
                 {/* Left Strap */}
@@ -914,7 +1099,23 @@ function LanyardStage({
                     if (onEditStrap) onEditStrap('left');
                   }}
                 />
-                <UnifiedStrapContent {...leftCL} design={design} logoImg={logoImg} strapW={strapW} onUpdateText={onUpdateText} onUpdateLogo={onUpdateLogo} onRemoveText={onRemoveText} onRemoveLogo={onRemoveLogo} showControls={showControls} zone="left" />
+                <UnifiedStrapContent 
+                  {...leftCL} 
+                  design={design} 
+                  items={continuousItems.leftItems} 
+                  logoImg={logoImg} 
+                  strapW={strapW} 
+                  onUpdateText={onUpdateTextBlockText} 
+                  onUpdateLogo={onUpdateLogo} 
+                  onRemoveText={onRemoveTextBlock} 
+                  onRemoveLogo={onRemoveLogo} 
+                  showControls={showControls} 
+                  zone="left" 
+                  setIsDraggingElement={setIsDraggingElement}
+                  distLeft={continuousItems.distLeft}
+                  distCenter={continuousItems.distCenter}
+                  totalPathLength={continuousItems.totalPathLength}
+                />
                 <CustomElements3D elements={design.strapElements?.left} strapW={strapW} {...leftCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
 
                 <CornerFold side="left" ox={CX - SPREAD} oy={TOP_Y} strapW={strapW} color={strapColor} />

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, LayoutTemplate, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { getAllTemplates } from '../data/schoolIdTemplates';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
@@ -78,7 +79,8 @@ function TemplateCard({ template, onUse }) {
   );
 }
 
-export default function Templates({ onNavigate }) {
+export default function Templates() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [orientation, setOrientation] = useState('all');
@@ -111,7 +113,7 @@ export default function Templates({ onNavigate }) {
         setField('idCard.back.elements', els);
       }
       showToast(`"${template.name}" applied! Opening Design Studio…`, 'success');
-      setTimeout(() => onNavigate('Customizer'), 600);
+      setTimeout(() => navigate('/studio'), 600);
     } catch {
       showToast('Could not apply template', 'error');
     }

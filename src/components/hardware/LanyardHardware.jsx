@@ -198,6 +198,32 @@ export function MetalCrimp({ x, y, strapW }) {
   );
 }
 
+export function SafetyBreakaway({ x, y, strapW }) {
+  const width = Math.max(34, strapW * 1.15);
+  return (
+    <Group x={x} y={y}>
+      {/* Left split clasp */}
+      <Rect
+        x={-width / 2} y={-7} width={width / 2 - 1} height={14}
+        fillLinearGradientStartPoint={{ x: -width / 2, y: -7 }}
+        fillLinearGradientEndPoint={{ x: 0, y: 7 }}
+        fillLinearGradientColorStops={[0, '#334155', 0.5, '#1e293b', 1, '#0f172a']}
+        stroke="#000" strokeWidth={0.8} cornerRadius={[4, 0, 0, 4]}
+      />
+      {/* Right split clasp */}
+      <Rect
+        x={1} y={-7} width={width / 2 - 1} height={14}
+        fillLinearGradientStartPoint={{ x: 0, y: -7 }}
+        fillLinearGradientEndPoint={{ x: width / 2, y: 7 }}
+        fillLinearGradientColorStops={[0, '#475569', 0.5, '#334155', 1, '#1e293b']}
+        stroke="#000" strokeWidth={0.8} cornerRadius={[0, 4, 4, 0]}
+      />
+      {/* Red safety indicator seam */}
+      <Line points={[0, -9, 0, 9]} stroke="#ef4444" strokeWidth={1.5} lineCap="round" />
+    </Group>
+  );
+}
+
 export function CardHolder({
   x,
   y,

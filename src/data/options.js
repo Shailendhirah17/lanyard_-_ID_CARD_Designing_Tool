@@ -42,6 +42,7 @@ export const quantities = [50, 100, 200, 500, 1000];
 export const fonts = ['Arial', 'Montserrat', 'Roboto', 'Open Sans'];
 
 export const presetColors = [
+  { name: 'White', value: '#ffffff', pantone: 'Pantone Bright White C' },
   { name: 'Navy', value: '#1e3a8a', pantone: 'Pantone 294 C' },
   { name: 'Royal Blue', value: '#2563eb', pantone: 'Pantone 300 C' },
   { name: 'Crimson', value: '#dc2626', pantone: 'Pantone 186 C' },

@@ -24,13 +24,20 @@ export const getStrapWidthMm = (width) => {
   return Number.isFinite(parsed) ? parsed : 20;
 };
 
+export const getStrapLengthInches = (length) => {
+  if (typeof length === 'number' && Number.isFinite(length)) return length;
+  const parsed = parseInt(String(length || '38').replace('"', '').replace('inch', ''), 10);
+  return Number.isFinite(parsed) ? parsed : 38;
+};
+
 export const getStageStrapWidthPx = (width) => Math.max(14, (getStrapWidthMm(width) / 20) * 36);
 
-export const getLanyardStageGeometry = (width) => {
+export const getLanyardStageGeometry = (width, length) => {
   const strapW = getStageStrapWidthPx(width);
+  const lengthInches = getStrapLengthInches(length);
+  const LOOP_H = Math.round((lengthInches / 38) * 450);
   const CX = 410;
   const TOP_Y = 50;
-  const LOOP_H = 450;
   const SPREAD = 140;
   const TIP_Y = TOP_Y + LOOP_H;
   const CRIMP_Y = TIP_Y - 50;
