@@ -22,6 +22,7 @@ const IdCardEditor   = lazy(() => import('./components/IdCardEditor'));
 const NewProject     = lazy(() => import('./pages/NewProject'));
 const Editor         = lazy(() => import('./pages/Editor'));
 const ExportFlow     = lazy(() => import('./pages/ExportFlow'));
+const IdCardDesigner = lazy(() => import('./pages/IdCardDesigner'));
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
 
@@ -333,7 +334,11 @@ export default function App() {
                     } else if (mode === 'import') {
                       navigate('/bulk-import');
                     } else {
-                      navigate('/editor');
+                      if (type === 'id-card') {
+                        navigate('/id-card-designer');
+                      } else {
+                        navigate('/editor');
+                      }
                     }
                   }}
                 />
@@ -344,6 +349,13 @@ export default function App() {
             <Route path="/editor" element={
               <RequireAuth user={user}>
                 <Editor />
+              </RequireAuth>
+            } />
+
+            {/* ── Dedicated ID Card Designer Module ── */}
+            <Route path="/id-card-designer" element={
+              <RequireAuth user={user}>
+                <IdCardDesigner />
               </RequireAuth>
             } />
 

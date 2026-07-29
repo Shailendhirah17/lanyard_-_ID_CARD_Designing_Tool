@@ -1029,7 +1029,6 @@ function LanyardStage({
                   isSelected={selectedZone === 'right'}
                   onClick={() => {
                     setSelectedZone('right');
-                    if (onEditStrap) onEditStrap('right');
                   }}
                 />
                 <UnifiedStrapContent 
@@ -1061,7 +1060,6 @@ function LanyardStage({
                   isSelected={selectedZone === 'center'}
                   onClick={() => {
                     setSelectedZone('center');
-                    if (onEditStrap) onEditStrap('center');
                   }}
                 />
                 <UnifiedStrapContent 
@@ -1096,7 +1094,6 @@ function LanyardStage({
                   isSelected={selectedZone === 'left'}
                   onClick={() => {
                     setSelectedZone('left');
-                    if (onEditStrap) onEditStrap('left');
                   }}
                 />
                 <UnifiedStrapContent 
