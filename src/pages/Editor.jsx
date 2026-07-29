@@ -187,7 +187,7 @@ export default function Editor() {
               zoom={zoom}
               setZoom={setZoom}
               currentStep={currentStep}
-              onEditStrap={(zone) => window.dispatchEvent(new CustomEvent('open-strap-editor', { detail: { zone } }))}
+              onEditStrap={() => {}}
             />
           </Suspense>
         </div>
@@ -293,7 +293,7 @@ export default function Editor() {
                   zoom={zoom}
                   setZoom={setZoom}
                   currentStep={currentStep}
-                  onEditStrap={(zone) => window.dispatchEvent(new CustomEvent('open-strap-editor', { detail: { zone } }))}
+                  onEditStrap={() => {}}
                 />
               </Suspense>
             )}
