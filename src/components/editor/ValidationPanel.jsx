@@ -123,9 +123,9 @@ export default function ValidationPanel({ design, visible = true, onToggle }) {
   return (
     <div className="bg-white border-t border-slate-200 shrink-0 overflow-hidden">
       {/* Header bar */}
-      <button
+      <div
         onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer"
       >
         {/* Score ring */}
         <div className="relative w-7 h-7 shrink-0">
@@ -165,7 +165,7 @@ export default function ValidationPanel({ design, visible = true, onToggle }) {
           </button>
           {expanded ? <ChevronDown size={13} className="text-slate-400" /> : <ChevronUp size={13} className="text-slate-400" />}
         </div>
-      </button>
+      </div>
 
       {/* Checks list */}
       {expanded && (

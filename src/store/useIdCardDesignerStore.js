@@ -7,11 +7,11 @@ const defaultCardSettings = {
   orientation: 'portrait', // 'portrait' | 'landscape'
   background: '#ffffff',
   material: 'PVC', // 'PVC' | 'Matte' | 'Glossy' | 'Transparent' | 'Metal'
-  borderThickness: 3,
-  borderColor: '#4f46e5',
+  borderThickness: 0,
+  borderColor: '#e2e8f0',
   roundedCorners: 12,
-  frameStyle: 'corporate', // 'corporate' | 'executive' | 'tech' | 'creative' | 'classic'
-  slotType: 'oval', // 'oval' | 'round' | 'double' | 'none'
+  frameStyle: 'none',
+  slotType: 'oval',
   slotColor: '#cbd5e1',
 };
 
@@ -24,12 +24,65 @@ const initialState = {
   zoom: 1,
   history: [],
   historyIndex: -1,
+  uploadedImages: [],
+};
+
+const safeStorage = {
+  getItem: (name) => {
+    try {
+      const str = localStorage.getItem(name);
+      return str ? JSON.parse(str) : null;
+    } catch (e) {
+      console.warn('[Zustand Storage] Failed to read item:', e);
+      return null;
+    }
+  },
+  setItem: (name, value) => {
+    try {
+      localStorage.setItem(name, JSON.stringify(value));
+    } catch (e) {
+      console.warn('[Zustand Storage] QuotaExceededError handled gracefully:', e);
+      try {
+        const payload = typeof value === 'string' ? JSON.parse(value) : value;
+        if (payload?.state?.uploadedImages) {
+          payload.state.uploadedImages = payload.state.uploadedImages.slice(0, 3);
+        }
+        localStorage.setItem(name, JSON.stringify(payload));
+      } catch (err) {
+        console.error('[Zustand Storage] Storage fallback reached:', err);
+      }
+    }
+  },
+  removeItem: (name) => {
+    try {
+      localStorage.removeItem(name);
+    } catch (e) {
+      console.warn('[Zustand Storage] Failed to remove item:', e);
+    }
+  },
 };
 
 export const useIdCardDesignerStore = create(
   persist(
     (set, get) => ({
       ...initialState,
+
+      // Uploaded Images Gallery Actions
+      addUploadedImage: (img) => set((state) => ({
+        uploadedImages: [
+          {
+            id: `img_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            url: img.url,
+            name: img.name || 'Uploaded Image',
+            uploadedAt: Date.now(),
+          },
+          ...(state.uploadedImages || []).slice(0, 15), // keep max 15 gallery items
+        ],
+      })),
+
+      removeUploadedImage: (id) => set((state) => ({
+        uploadedImages: (state.uploadedImages || []).filter((img) => img.id !== id),
+      })),
 
       // Actions
       setActiveSide: (side) => set({ activeSide: side, selectedId: null }),
@@ -40,7 +93,7 @@ export const useIdCardDesignerStore = create(
       })),
 
       copyFrontToBack: () => set((state) => {
-        const copied = state.frontElements.map(el => ({
+        const copied = (state.frontElements || []).map(el => ({
           ...el,
           id: `${el.id}_back_${Math.random().toString(36).substring(2, 7)}`
         }));
@@ -61,7 +114,7 @@ export const useIdCardDesignerStore = create(
 
       addElement: (element) => set((state) => {
         const targetSide = state.activeSide === 'front' ? 'frontElements' : 'backElements';
-        const newElements = [...state[targetSide], element];
+        const newElements = [...(state[targetSide] || []), element];
         const newState = { [targetSide]: newElements, selectedId: element.id };
         get().saveHistory(newState);
         return newState;
@@ -69,7 +122,7 @@ export const useIdCardDesignerStore = create(
 
       updateElement: (id, newProps) => set((state) => {
         const targetSide = state.activeSide === 'front' ? 'frontElements' : 'backElements';
-        const newElements = state[targetSide].map((el) => (el.id === id ? { ...el, ...newProps } : el));
+        const newElements = (state[targetSide] || []).map((el) => (el.id === id ? { ...el, ...newProps } : el));
         const newState = { [targetSide]: newElements };
         get().saveHistory(newState);
         return newState;
@@ -77,7 +130,7 @@ export const useIdCardDesignerStore = create(
 
       removeElement: (id) => set((state) => {
         const targetSide = state.activeSide === 'front' ? 'frontElements' : 'backElements';
-        const newElements = state[targetSide].filter((el) => el.id !== id);
+        const newElements = (state[targetSide] || []).filter((el) => el.id !== id);
         const newState = { [targetSide]: newElements, selectedId: state.selectedId === id ? null : state.selectedId };
         get().saveHistory(newState);
         return newState;
@@ -85,7 +138,7 @@ export const useIdCardDesignerStore = create(
 
       bringForward: (id) => set((state) => {
         const targetSide = state.activeSide === 'front' ? 'frontElements' : 'backElements';
-        const elements = [...state[targetSide]];
+        const elements = [...(state[targetSide] || [])];
         const index = elements.findIndex((el) => el.id === id);
         if (index < elements.length - 1) {
           const temp = elements[index];
@@ -100,7 +153,7 @@ export const useIdCardDesignerStore = create(
 
       sendBackward: (id) => set((state) => {
         const targetSide = state.activeSide === 'front' ? 'frontElements' : 'backElements';
-        const elements = [...state[targetSide]];
+        const elements = [...(state[targetSide] || [])];
         const index = elements.findIndex((el) => el.id === id);
         if (index > 0) {
           const temp = elements[index];
@@ -122,11 +175,11 @@ export const useIdCardDesignerStore = create(
           cardSettings: nextState.cardSettings,
         };
         
-        const newHistory = state.history.slice(0, state.historyIndex + 1);
+        const newHistory = (state.history || []).slice(0, (state.historyIndex ?? -1) + 1);
         newHistory.push(snapshot);
         
-        // Keep max 50 states
-        if (newHistory.length > 50) {
+        // Keep max 20 states in memory
+        if (newHistory.length > 20) {
           newHistory.shift();
         }
         
@@ -164,22 +217,36 @@ export const useIdCardDesignerStore = create(
       }),
 
       clearCanvas: () => set((state) => {
+        try {
+          localStorage.removeItem('id-card-designer-storage');
+        } catch (e) {}
+
         const newState = {
           frontElements: [],
           backElements: [],
           selectedId: null,
+          history: [],
+          historyIndex: -1,
+          cardSettings: {
+            ...defaultCardSettings,
+            background: '#ffffff',
+            borderThickness: 0,
+            borderColor: '#e2e8f0',
+            frameStyle: 'none',
+          },
         };
-        get().saveHistory(newState);
         return newState;
       }),
       
     }),
     {
       name: 'id-card-designer-storage',
+      storage: safeStorage,
       partialize: (state) => ({
         frontElements: state.frontElements,
         backElements: state.backElements,
         cardSettings: state.cardSettings,
+        uploadedImages: state.uploadedImages,
       }),
     }
   )

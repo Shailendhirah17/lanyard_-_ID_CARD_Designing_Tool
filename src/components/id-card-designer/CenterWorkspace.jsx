@@ -1,24 +1,172 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stage, Layer, Rect, Text as KonvaText, Circle, Transformer, RegularPolygon, Star, Ring, Path, Ellipse, Line } from 'react-konva';
+import { Stage, Layer, Rect, Text as KonvaText, Circle, Transformer, RegularPolygon, Star, Ring, Path, Ellipse, Line, Image as KonvaImage } from 'react-konva';
+import useImage from 'use-image';
 import { useIdCardDesignerStore } from '../../store/useIdCardDesignerStore';
 import { ZoomIn, ZoomOut, Maximize, RotateCw, Copy, Expand } from 'lucide-react';
 
 const MM_TO_PX = 3.7795275591; // 1 mm = 3.78px approx
+
+function KonvaImageNode({ element, commonProps }) {
+  const [img] = useImage(element.src || element.url || '', 'anonymous');
+  const w = element.width || 80;
+  const h = element.height || 80;
+  return (
+    <KonvaImage
+      {...commonProps}
+      image={img}
+      width={w}
+      height={h}
+      cornerRadius={element.cornerRadius || 0}
+    />
+  );
+}
+
+function getPatternProps(st, w, h, patternImg, element = {}) {
+  if (!patternImg || !patternImg.width || !patternImg.height) return {};
+  
+  const imgW = patternImg.width;
+  const imgH = patternImg.height;
+  const isPath = ['heart', 'shield', 'badge', 'arrow', 'speech'].includes(st);
+  const isCenteredShape = ['circle', 'ellipse', 'triangle', 'diamond', 'pentagon', 'hexagon', 'octagon', 'star', 'burst_star', 'ring'].includes(st);
+
+  const customZoom = element.imageZoom !== undefined ? element.imageZoom : 1;
+  const customOffsetX = element.imageOffsetX || 0;
+  const customOffsetY = element.imageOffsetY || 0;
+
+  if (isPath) {
+    const targetW = 100;
+    const targetH = 100;
+    const scaleFactor = Math.max(targetW / imgW, targetH / imgH) * customZoom;
+    const offX = (imgW - targetW / scaleFactor) / 2 - customOffsetX / scaleFactor;
+    const offY = (imgH - targetH / scaleFactor) / 2 - customOffsetY / scaleFactor;
+
+    return {
+      fillPatternImage: patternImg,
+      fillPatternScale: { x: scaleFactor, y: scaleFactor },
+      fillPatternOffset: { x: offX, y: offY },
+      fillPatternRepeat: 'no-repeat',
+      fill: null,
+    };
+  }
+
+  const targetW = w > 0 ? w : 50;
+  const targetH = h > 0 ? h : 50;
+  const scaleFactor = Math.max(targetW / imgW, targetH / imgH) * customZoom;
+
+  if (isCenteredShape) {
+    // Centered shapes (Circle, Polygons, Star, Ring) draw centered around local (0,0)
+    const offX = imgW / 2 - customOffsetX / scaleFactor;
+    const offY = imgH / 2 - customOffsetY / scaleFactor;
+
+    return {
+      fillPatternImage: patternImg,
+      fillPatternScale: { x: scaleFactor, y: scaleFactor },
+      fillPatternOffset: { x: offX, y: offY },
+      fillPatternRepeat: 'no-repeat',
+      fill: null,
+    };
+  }
+
+  // Top-Left aligned shapes (Rect, Rounded Rect)
+  const offX = (imgW - targetW / scaleFactor) / 2 - customOffsetX / scaleFactor;
+  const offY = (imgH - targetH / scaleFactor) / 2 - customOffsetY / scaleFactor;
+
+  return {
+    fillPatternImage: patternImg,
+    fillPatternScale: { x: scaleFactor, y: scaleFactor },
+    fillPatternOffset: { x: offX, y: offY },
+    fillPatternRepeat: 'no-repeat',
+    fill: null,
+  };
+}
+
+function ShapeElementRenderer({ element, commonProps }) {
+  const [patternImg] = useImage(element.imageSrc || '', 'anonymous');
+  const st = element.shapeType;
+  const w = element.width || 50;
+  const h = element.height || 50;
+  const r = w / 2;
+
+  const patternProps = element.imageSrc && patternImg ? getPatternProps(st, w, h, patternImg, element) : {};
+  const props = { ...commonProps, ...patternProps };
+
+  if (st === 'rect') return <Rect {...props} width={w} height={h} />;
+  if (st === 'rounded_rect') return <Rect {...props} width={w} height={h} cornerRadius={element.cornerRadius || 10} />;
+  if (st === 'circle') return <Circle {...props} radius={r} offsetX={-r} offsetY={-r} />;
+  if (st === 'ellipse') return <Ellipse {...props} radiusX={w / 2} radiusY={h / 2} offsetX={-w / 2} offsetY={-h / 2} />;
+  if (st === 'triangle') return <RegularPolygon {...props} sides={3} radius={r} offsetX={-r} offsetY={-r} />;
+  if (st === 'diamond') return <RegularPolygon {...props} sides={4} radius={r} rotation={45} offsetX={-r} offsetY={-r} />;
+  if (st === 'pentagon') return <RegularPolygon {...props} sides={5} radius={r} offsetX={-r} offsetY={-r} />;
+  if (st === 'hexagon') return <RegularPolygon {...props} sides={6} radius={r} offsetX={-r} offsetY={-r} />;
+  if (st === 'octagon') return <RegularPolygon {...props} sides={8} radius={r} offsetX={-r} offsetY={-r} />;
+  if (st === 'star') return <Star {...props} numPoints={5} innerRadius={r * 0.4} outerRadius={r} offsetX={-r} offsetY={-r} />;
+  if (st === 'burst_star') return <Star {...props} numPoints={8} innerRadius={r * 0.6} outerRadius={r} offsetX={-r} offsetY={-r} />;
+  if (st === 'ring') return <Ring {...props} innerRadius={r * 0.5} outerRadius={r} offsetX={-r} offsetY={-r} />;
+  if (st === 'line') return <Line {...props} points={[0, h / 2, w, h / 2]} stroke={element.fill || element.stroke || '#000'} strokeWidth={element.strokeWidth || 3} />;
+  if (st === 'heart') {
+    const scaleX = w / 100;
+    const scaleY = h / 100;
+    return <Path {...props} data="M 50 30 C 50 15, 20 10, 10 35 C 0 60, 40 80, 50 95 C 60 80, 100 60, 90 35 C 80 10, 50 15, 50 30 Z" scaleX={scaleX} scaleY={scaleY} />;
+  }
+  if (st === 'shield') {
+    const scaleX = w / 100;
+    const scaleY = h / 100;
+    return <Path {...props} data="M 10 10 L 90 10 L 90 50 C 90 75 50 95 50 95 C 50 95 10 75 10 50 Z" scaleX={scaleX} scaleY={scaleY} />;
+  }
+  if (st === 'badge') {
+    const scaleX = w / 100;
+    const scaleY = h / 100;
+    return <Path {...props} data="M 20 10 L 80 10 L 80 85 L 50 70 L 20 85 Z" scaleX={scaleX} scaleY={scaleY} />;
+  }
+  if (st === 'arrow') {
+    const scaleX = w / 100;
+    const scaleY = h / 100;
+    return <Path {...props} data="M 10 35 L 65 35 L 65 15 L 95 50 L 65 85 L 65 65 L 10 65 Z" scaleX={scaleX} scaleY={scaleY} />;
+  }
+  if (st === 'speech') {
+    const scaleX = w / 100;
+    const scaleY = h / 100;
+    return <Path {...props} data="M 10 10 L 90 10 Q 98 10 98 18 L 98 60 Q 98 68 90 68 L 40 68 L 20 88 L 25 68 L 10 68 Q 2 68 2 60 L 2 18 Q 2 10 10 10 Z" scaleX={scaleX} scaleY={scaleY} />;
+  }
+  return <Rect {...props} width={w} height={h} />;
+}
 
 function ElementRenderer({ element, isSelected, onSelect }) {
   const shapeRef = useRef();
   const trRef = useRef();
 
   useEffect(() => {
-    if (isSelected && trRef.current && shapeRef.current) {
-      trRef.current.nodes([shapeRef.current]);
-      trRef.current.getLayer().batchDraw();
+    let isMounted = true;
+    if (isSelected && trRef.current && shapeRef.current && !shapeRef.current.isDestroyed?.()) {
+      try {
+        trRef.current.nodes([shapeRef.current]);
+        trRef.current.getLayer()?.batchDraw();
+      } catch (e) {}
+    } else if (!isSelected && trRef.current) {
+      try {
+        trRef.current.nodes([]);
+      } catch (e) {}
     }
-  }, [isSelected]);
+    return () => {
+      isMounted = false;
+      if (trRef.current) {
+        try {
+          trRef.current.nodes([]);
+        } catch (e) {}
+      }
+    };
+  }, [isSelected, element.id]);
 
   const commonProps = {
-    onClick: () => onSelect(element.id),
-    onTap: () => onSelect(element.id),
+    id: element.id,
+    onClick: (e) => {
+      e.cancelBubble = true;
+      onSelect(element.id);
+    },
+    onTap: (e) => {
+      e.cancelBubble = true;
+      onSelect(element.id);
+    },
     ref: shapeRef,
     draggable: true,
     x: element.x,
@@ -26,15 +174,18 @@ function ElementRenderer({ element, isSelected, onSelect }) {
     fill: element.fill,
     stroke: element.stroke || null,
     strokeWidth: element.strokeWidth || 0,
-    opacity: element.opacity,
+    opacity: element.opacity !== undefined ? element.opacity : 1,
     onDragEnd: (e) => {
-      useIdCardDesignerStore.getState().updateElement(element.id, {
-        x: e.target.x(),
-        y: e.target.y(),
-      });
+      if (e.target && !e.target.isDestroyed?.()) {
+        useIdCardDesignerStore.getState().updateElement(element.id, {
+          x: e.target.x(),
+          y: e.target.y(),
+        });
+      }
     },
     onTransformEnd: (e) => {
       const node = shapeRef.current;
+      if (!node || node.isDestroyed?.()) return;
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
       node.scaleX(1);
@@ -46,12 +197,12 @@ function ElementRenderer({ element, isSelected, onSelect }) {
         rotation: node.rotation(),
       };
 
-      if (element.type === 'shape' || element.type === 'qrcode') {
+      if (element.type === 'shape' || element.type === 'qrcode' || element.type === 'image') {
         newProps.width = Math.max(5, node.width() * scaleX);
         newProps.height = Math.max(5, node.height() * scaleY);
       }
       if (element.type === 'text') {
-        newProps.fontSize = Math.max(5, node.fontSize() * scaleX);
+        newProps.fontSize = Math.max(5, (node.fontSize() || 14) * scaleX);
         newProps.width = Math.max(10, node.width() * scaleX);
       }
       
@@ -82,61 +233,10 @@ function ElementRenderer({ element, isSelected, onSelect }) {
         width={element.width}
       />
     );
+  } else if (element.type === 'image') {
+    NodeComponent = <KonvaImageNode element={element} commonProps={commonProps} />;
   } else if (element.type === 'shape') {
-    const st = element.shapeType;
-    const w = element.width || 50;
-    const h = element.height || 50;
-    const r = w / 2;
-
-    if (st === 'rect') {
-      NodeComponent = <Rect {...commonProps} width={w} height={h} />;
-    } else if (st === 'rounded_rect') {
-      NodeComponent = <Rect {...commonProps} width={w} height={h} cornerRadius={element.cornerRadius || 10} />;
-    } else if (st === 'circle') {
-      NodeComponent = <Circle {...commonProps} radius={r} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'ellipse') {
-      NodeComponent = <Ellipse {...commonProps} radiusX={w / 2} radiusY={h / 2} offsetX={-w / 2} offsetY={-h / 2} />;
-    } else if (st === 'triangle') {
-      NodeComponent = <RegularPolygon {...commonProps} sides={3} radius={r} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'diamond') {
-      NodeComponent = <RegularPolygon {...commonProps} sides={4} radius={r} rotation={45} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'pentagon') {
-      NodeComponent = <RegularPolygon {...commonProps} sides={5} radius={r} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'hexagon') {
-      NodeComponent = <RegularPolygon {...commonProps} sides={6} radius={r} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'octagon') {
-      NodeComponent = <RegularPolygon {...commonProps} sides={8} radius={r} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'star') {
-      NodeComponent = <Star {...commonProps} numPoints={5} innerRadius={r * 0.4} outerRadius={r} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'burst_star') {
-      NodeComponent = <Star {...commonProps} numPoints={8} innerRadius={r * 0.6} outerRadius={r} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'ring') {
-      NodeComponent = <Ring {...commonProps} innerRadius={r * 0.5} outerRadius={r} offsetX={-r} offsetY={-r} />;
-    } else if (st === 'line') {
-      NodeComponent = <Line {...commonProps} points={[0, h / 2, w, h / 2]} stroke={element.fill} strokeWidth={element.strokeWidth || 3} />;
-    } else if (st === 'heart') {
-      const scaleX = w / 100;
-      const scaleY = h / 100;
-      NodeComponent = <Path {...commonProps} data="M 50 30 C 50 15, 20 10, 10 35 C 0 60, 40 80, 50 95 C 60 80, 100 60, 90 35 C 80 10, 50 15, 50 30 Z" scaleX={scaleX} scaleY={scaleY} />;
-    } else if (st === 'shield') {
-      const scaleX = w / 100;
-      const scaleY = h / 100;
-      NodeComponent = <Path {...commonProps} data="M 10 10 L 90 10 L 90 50 C 90 75 50 95 50 95 C 50 95 10 75 10 50 Z" scaleX={scaleX} scaleY={scaleY} />;
-    } else if (st === 'badge') {
-      const scaleX = w / 100;
-      const scaleY = h / 100;
-      NodeComponent = <Path {...commonProps} data="M 20 10 L 80 10 L 80 85 L 50 70 L 20 85 Z" scaleX={scaleX} scaleY={scaleY} />;
-    } else if (st === 'arrow') {
-      const scaleX = w / 100;
-      const scaleY = h / 100;
-      NodeComponent = <Path {...commonProps} data="M 10 35 L 65 35 L 65 15 L 95 50 L 65 85 L 65 65 L 10 65 Z" scaleX={scaleX} scaleY={scaleY} />;
-    } else if (st === 'speech') {
-      const scaleX = w / 100;
-      const scaleY = h / 100;
-      NodeComponent = <Path {...commonProps} data="M 10 10 L 90 10 Q 98 10 98 18 L 98 60 Q 98 68 90 68 L 40 68 L 20 88 L 25 68 L 10 68 Q 2 68 2 60 L 2 18 Q 2 10 10 10 Z" scaleX={scaleX} scaleY={scaleY} />;
-    } else {
-      NodeComponent = <Rect {...commonProps} width={w} height={h} />;
-    }
+    NodeComponent = <ShapeElementRenderer element={element} commonProps={commonProps} />;
   } else if (element.type === 'qrcode') {
     NodeComponent = (
       <Rect {...commonProps} width={element.width} height={element.height} fill={element.background} stroke={element.fill} strokeWidth={2} />

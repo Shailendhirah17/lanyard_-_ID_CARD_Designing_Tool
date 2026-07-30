@@ -10,6 +10,7 @@ import { PlusCircle, CheckCircle2, X, FileText, Calendar, Truck, ShieldCheck, Lo
 import ToastContainer, { showToast } from './components/Toast';
 import { useAuth } from './hooks/useAuth';
 import { useProjectStore } from './store/useProjectStore';
+import { useIdCardDesignerStore } from './store/useIdCardDesignerStore';
 
 // ─── Code-split pages ────────────────────────────────────────────
 const Dashboard      = lazy(() => import('./pages/Dashboard'));
@@ -329,13 +330,23 @@ export default function App() {
                   onStart={(type, mode) => {
                     const createProject = useProjectStore.getState().createProject;
                     if (createProject) createProject(type);
-                    if (mode === 'template') {
-                      navigate('/templates');
-                    } else if (mode === 'import') {
-                      navigate('/bulk-import');
-                    } else {
-                      if (type === 'id-card') {
+
+                    if (type === 'id-card' || type === 'id_card') {
+                      if (mode === 'template') {
+                        navigate('/id-card-designer?tab=frames');
+                      } else if (mode === 'blank') {
+                        useIdCardDesignerStore.getState().clearCanvas();
+                        navigate('/id-card-designer?tab=text&mode=blank');
+                      } else if (mode === 'import') {
+                        navigate('/id-card-designer?tab=uploads');
+                      } else {
                         navigate('/id-card-designer');
+                      }
+                    } else {
+                      if (mode === 'template') {
+                        navigate('/templates');
+                      } else if (mode === 'import') {
+                        navigate('/bulk-import');
                       } else {
                         navigate('/editor');
                       }

@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
-  Pencil, Shapes, Layers, UploadCloud, Frame,
+  Pencil, Shapes, Layers, UploadCloud, Frame, Trash2,
   Square, Circle, Triangle, Minus, Star, Sparkles, Heart, Shield, Bookmark, ArrowRight, MessageSquare, Hexagon, Octagon, Disc, Diamond,
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight
 } from 'lucide-react';
 import { useIdCardDesignerStore } from '../../store/useIdCardDesignerStore';
+import ImageCropModal from './ImageCropModal';
 
 const TABS = [
   { id: 'frames', icon: Frame, label: 'Frames' },
@@ -36,6 +38,19 @@ const SHAPES_LIST = [
 ];
 
 const ID_CARD_FRAMES = [
+  {
+    id: 'blank',
+    name: 'Blank Canvas',
+    tag: 'Plain White Card',
+    borderColor: '#cbd5e1',
+    borderThickness: 0,
+    roundedCorners: 12,
+    slotType: 'oval',
+    bg: '#ffffff',
+    elements: [],
+    backElements: [],
+    isBlank: true,
+  },
   {
     id: 'corporate',
     name: 'Modern Corporate Frame',
@@ -210,15 +225,22 @@ const ID_CARD_FRAMES = [
     elements: [
       { id: 'f_bg_10', type: 'shape', shapeType: 'rect', x: 0, y: 0, width: 204, height: 55, fill: '#0284c7', opacity: 1 },
       { id: 'f_title_10', type: 'text', text: 'AERO TECH', x: 20, y: 25, fontSize: 15, fontWeight: 'bold', fontFamily: 'Inter', fill: '#ffffff', opacity: 1 },
-      { id: 'f_name_10', type: 'text', text: 'Emma Watson', x: 20, y: 140, fontSize: 18, fontWeight: 'bold', fontFamily: 'Inter', fill: '#0369a1', opacity: 1 },
+  { id: 'f_name_10', type: 'text', text: 'Emma Watson', x: 20, y: 140, fontSize: 18, fontWeight: 'bold', fontFamily: 'Inter', fill: '#0369a1', opacity: 1 },
       { id: 'f_role_10', type: 'text', text: 'Product Manager', x: 20, y: 165, fontSize: 11, fontWeight: 'normal', fontFamily: 'Inter', fill: '#0284c7', opacity: 1 },
-      { id: 'f_qr_10', type: 'qrcode', x: 130, y: 200, width: 50, height: 50, qrValue: 'https://aerotech.com/emma', fill: '#0369a1', background: '#ffffff' }
     ]
   }
 ];
 
 export default function LeftSidebar() {
-  const [activeTab, setActiveTab] = useState('frames');
+  const [searchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(urlTab || 'frames');
+
+  useEffect(() => {
+    if (urlTab) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
   const addElement = useIdCardDesignerStore(s => s.addElement);
   const updateCardSettings = useIdCardDesignerStore(s => s.updateCardSettings);
   const selectedId = useIdCardDesignerStore(s => s.selectedId);
@@ -227,10 +249,62 @@ export default function LeftSidebar() {
   const activeSide = useIdCardDesignerStore(s => s.activeSide);
   const updateElement = useIdCardDesignerStore(s => s.updateElement);
 
+  const uploadedImages = useIdCardDesignerStore(s => s.uploadedImages || []);
+  const addUploadedImage = useIdCardDesignerStore(s => s.addUploadedImage);
+  const removeUploadedImage = useIdCardDesignerStore(s => s.removeUploadedImage);
+
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [cropModalSrc, setCropModalSrc] = useState(null);
+  const cropCallbackRef = useRef(null);
+
+  const shapeUploadInputRef = useRef(null);
+  const [targetShapeForUpload, setTargetShapeForUpload] = useState('circle');
+
   const currentElements = activeSide === 'front' ? (frontElements || []) : (backElements || []);
   const selectedElement = currentElements.find(el => el && el.id === selectedId);
 
+  const handleAddImage = (src, width = 80, height = 80) => {
+    addElement({
+      id: `img_${Date.now()}`,
+      type: 'image',
+      x: 30,
+      y: 50,
+      width,
+      height,
+      src,
+      opacity: 1,
+    });
+  };
+
+  const handleAddShapeWithImage = (shapeType, imageSrc) => {
+    addElement({
+      id: `shape_${Date.now()}`,
+      type: 'shape',
+      shapeType,
+      x: 30,
+      y: 50,
+      width: 70,
+      height: 70,
+      imageSrc,
+      fill: '#ffffff',
+      stroke: '#4f46e5',
+      strokeWidth: 2,
+      opacity: 1,
+    });
+  };
+
+  const openCropModalForImage = (imageSrc, onComplete) => {
+    setCropModalSrc(imageSrc);
+    cropCallbackRef.current = onComplete;
+    setCropModalOpen(true);
+  };
+
   const handleApplyFrameTemplate = (tpl) => {
+    if (tpl.isBlank) {
+      useIdCardDesignerStore.getState().clearCanvas();
+      return;
+    }
+
     updateCardSettings({
       borderColor: tpl.borderColor,
       borderThickness: tpl.borderThickness,
@@ -554,8 +628,8 @@ export default function LeftSidebar() {
 
         {activeTab === 'shapes' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">18 Vector Shapes</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Vector Shapes & Masks</h3>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">18 Available</span>
             </div>
             
@@ -580,12 +654,172 @@ export default function LeftSidebar() {
           </div>
         )}
 
-        {(activeTab === 'uploads' || activeTab === 'layers') && (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-            <p className="text-sm">Feature coming soon</p>
+        {activeTab === 'uploads' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Image & Photo Import</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">Cropper Ready</span>
+            </div>
+
+            {/* Dropzone Upload Button */}
+            <label className="w-full p-5 border-2 border-dashed border-indigo-300 hover:border-indigo-500 rounded-2xl bg-indigo-50/40 hover:bg-indigo-50/80 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer group text-center">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-110 transition-transform">
+                <UploadCloud className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">Click to Upload Image</span>
+                <span className="text-[10px] text-slate-500 font-medium">PNG, JPG, WEBP or SVG (Max 10MB)</span>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    const src = ev.target.result;
+                    addUploadedImage({ url: src, name: file.name });
+                    handleAddImage(src);
+                  };
+                  reader.readAsDataURL(file);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+
+            {/* Gallery of Uploaded Images */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700">Uploaded Gallery ({uploadedImages.length})</span>
+                {uploadedImages.length > 0 && (
+                  <span className="text-[10px] font-medium text-slate-400">Click to insert</span>
+                )}
+              </div>
+
+              {uploadedImages.length === 0 ? (
+                <div className="p-6 text-center bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                  <UploadCloud className="w-8 h-8 text-slate-300 mx-auto" />
+                  <p className="text-xs font-semibold text-slate-600">No uploaded images yet.</p>
+                  <p className="text-[10px] text-slate-400">Upload photos, employee avatars, or company logos to add onto your ID card design.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2.5 max-h-[380px] overflow-y-auto pr-1">
+                  {uploadedImages.map((img) => (
+                    <div
+                      key={img.id}
+                      className="group relative bg-slate-50 border border-slate-200 rounded-2xl p-2 flex flex-col items-center gap-1.5 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all shadow-2xs"
+                    >
+                      <div className="w-full aspect-square rounded-xl bg-white overflow-hidden flex items-center justify-center border border-slate-100 relative">
+                        <img src={img.url} alt={img.name} className="w-full h-full object-contain p-1" />
+                        
+                        {/* Hover Overlay Quick Actions */}
+                        <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2 backdrop-blur-2xs">
+                          <button
+                            onClick={() => handleAddImage(img.url)}
+                            className="w-full py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold shadow-xs transition-transform cursor-pointer"
+                          >
+                            + Add Image
+                          </button>
+                          <button
+                            onClick={() => openCropModalForImage(img.url, (croppedUrl) => handleAddImage(croppedUrl))}
+                            className="w-full py-1 bg-white hover:bg-slate-100 text-slate-800 rounded-lg text-[10px] font-bold shadow-xs transition-transform cursor-pointer flex items-center justify-center gap-1"
+                          >
+                            <Sparkles className="w-3 h-3 text-indigo-600" />
+                            <span>Crop</span>
+                          </button>
+                          <button
+                            onClick={() => handleAddShapeWithImage('circle', img.url)}
+                            className="w-full py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-bold shadow-xs transition-transform cursor-pointer"
+                          >
+                            In Shape
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="w-full flex items-center justify-between px-1">
+                        <span className="text-[10px] font-medium text-slate-600 truncate max-w-[90px]">{img.name}</span>
+                        <button
+                          onClick={() => removeUploadedImage(img.id)}
+                          className="text-slate-400 hover:text-red-500 p-0.5 rounded transition-colors"
+                          title="Remove image"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'layers' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Canvas Layers ({currentElements.length})</h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">Side: {activeSide}</span>
+            </div>
+
+            {currentElements.length === 0 ? (
+              <div className="p-6 text-center bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                <Layers className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="text-xs font-semibold text-slate-600">No elements on this side.</p>
+                <p className="text-[10px] text-slate-400">Add text, shapes, or images to customize your ID card.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {[...currentElements].reverse().map((el) => {
+                  const isSelected = selectedId === el.id;
+                  return (
+                    <div
+                      key={el.id}
+                      onClick={() => useIdCardDesignerStore.setState({ selectedId: el.id })}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+                        isSelected ? 'bg-indigo-50 border-indigo-300 font-bold' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 font-bold">
+                          {el.type === 'text' ? <Pencil className="w-3.5 h-3.5" /> : el.type === 'image' ? <UploadCloud className="w-3.5 h-3.5" /> : <Shapes className="w-3.5 h-3.5" />}
+                        </div>
+                        <span className="text-xs font-medium text-slate-800 capitalize truncate max-w-[140px]">
+                          {el.type === 'text' ? el.text : el.shapeType ? `${el.shapeType} shape` : el.type}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          useIdCardDesignerStore.getState().removeElement(el.id);
+                        }}
+                        className="text-slate-400 hover:text-red-600 p-1 rounded-lg hover:bg-white transition-colors"
+                        title="Delete layer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        isOpen={cropModalOpen}
+        imageSrc={cropModalSrc}
+        onClose={() => setCropModalOpen(false)}
+        onCropComplete={(croppedUrl) => {
+          if (cropCallbackRef.current) {
+            cropCallbackRef.current(croppedUrl);
+          }
+        }}
+      />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {

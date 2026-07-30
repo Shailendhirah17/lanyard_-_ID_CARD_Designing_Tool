@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useIdCardDesignerStore } from '../store/useIdCardDesignerStore';
 import {
   CreditCard,
   Link2,
@@ -202,9 +203,9 @@ function ModeCard({ mode, selected, onClick }) {
 ───────────────────────────────────────── */
 export default function NewProject({ onStart }) {
   const navigate = useNavigate();
-  const [selectedType, setSelectedType] = useState(null);
+  const [selectedType, setSelectedType] = useState('id-card');
   const [selectedMode, setSelectedMode] = useState(null);
-  const [modeVisible, setModeVisible]   = useState(false);
+  const [modeVisible, setModeVisible]   = useState(true);
 
   function handleSelectType(id) {
     setSelectedType(id);
@@ -213,20 +214,40 @@ export default function NewProject({ onStart }) {
     }
   }
 
-  function handleContinue() {
-    if (!selectedType || !selectedMode) return;
-
+  function handleNavigate(type, mode) {
     if (typeof onStart === 'function') {
-      onStart(selectedType, selectedMode, null);
+      onStart(type, mode, null);
     } else {
-      if (selectedMode === 'template') {
-        navigate('/templates');
-      } else if (selectedMode === 'import') {
-        navigate('/bulk-import');
+      if (type === 'id-card' || type === 'id_card') {
+        if (mode === 'template') {
+          navigate('/id-card-designer?tab=frames');
+        } else if (mode === 'blank') {
+          useIdCardDesignerStore.getState().clearCanvas();
+          navigate('/id-card-designer?tab=text&mode=blank');
+        } else if (mode === 'import') {
+          navigate('/id-card-designer?tab=uploads');
+        } else {
+          navigate('/id-card-designer');
+        }
       } else {
-        navigate('/editor');
+        if (mode === 'template') {
+          navigate('/templates');
+        } else if (mode === 'import') {
+          navigate('/bulk-import');
+        } else {
+          navigate('/editor');
+        }
       }
     }
+  }
+
+  function handleSelectMode(modeId) {
+    setSelectedMode(modeId);
+  }
+
+  function handleContinue() {
+    if (!selectedType || !selectedMode) return;
+    handleNavigate(selectedType, selectedMode);
   }
 
   const canContinue = Boolean(selectedType && selectedMode);
@@ -357,7 +378,7 @@ export default function NewProject({ onStart }) {
                     key={mode.id}
                     mode={mode}
                     selected={selectedMode === mode.id}
-                    onClick={() => setSelectedMode(mode.id)}
+                    onClick={() => handleSelectMode(mode.id)}
                   />
                 ))}
               </div>
