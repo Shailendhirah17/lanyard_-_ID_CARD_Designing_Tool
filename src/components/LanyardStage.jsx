@@ -406,80 +406,53 @@ function DimLine({ x1, y1, x2, y2, label }) {
 }
 
 // ─── INDEPENDENT Content with Independent Drills ──────────────────────────
-function UnifiedStrapContent({ x1, y1, x2, y2, design, logoImg, strapW, forceNoLogo, forceNoText, onUpdateText, onUpdateLogo, onRemoveText, onRemoveLogo, showControls, zone }) {
-  const { lanyardDesignStyle, customText, customTextSecondary, fontColor, fontFamily, fontSize, fontWeight, lineHeight, textAlign, textSpacing, logoScale, logoRotation, textOffset, logoOffset, copyMode, customTextLeft, customTextCenter, customTextRight, textYOffset, textYOffsetLeft, textYOffsetCenter, textYOffsetRight } = design;
-  
+function UnifiedStrapContent({
+  x1,
+  y1,
+  x2,
+  y2,
+  design,
+  logoImg,
+  strapW,
+  forceNoLogo,
+  forceNoText,
+  onUpdateText,
+  onUpdateLogo,
+  onRemoveText,
+  onRemoveLogo,
+  showControls,
+  zone,
+  items = [],
+}) {
+  const {
+    lanyardDesignStyle,
+    fontColor,
+    fontFamily,
+    fontSize,
+    fontWeight,
+    lineHeight,
+    textAlign,
+    logoScale,
+    logoRotation,
+    logoOffset,
+    copyMode,
+  } = design;
+
   const dx = x2 - x1, dy = y2 - y1;
   const localClipPoints = buildStrapClipPoints(0, 0, dx, dy, strapW, 1.5);
   const dist = Math.hypot(dx, dy);
-  // Force both straps to use the same angle as the left strap by treating dx as always positive.
-  // Math.abs(dx) makes the right strap's angle identical to the left strap's angle.
   const angle = Math.atan2(dy, Math.abs(dx)) * (180 / Math.PI);
-  const textScaleX = 1;
-  let mainText = forceNoText ? '' : (copyMode === 'synchronized' ? customTextCenter : (zone === 'left' ? customTextLeft : (zone === 'right' ? customTextRight : customTextCenter)));
-  let subText = lanyardDesignStyle === 'stacked-text' ? customTextSecondary : null;
 
-  if (!mainText && !logoImg) return null;
-
-  const fs = Math.min(fontSize, Math.max(6, strapW * 0.7));
-  const hasLogo = logoImg && (lanyardDesignStyle === 'repeated' || (lanyardDesignStyle === 'central-logo' && forceNoLogo === false)) && !forceNoLogo;
-  const hasSubText = subText && lanyardDesignStyle === 'stacked-text';
-  const editorAlongScale = Math.max(dist / STRAP_EDITOR_WIDTH_PX, 0.001);
-  const editorCrossScale = Math.max(strapW / STRAP_EDITOR_HEIGHT_PX, 0.001);
-  const rawTextOffset = copyMode === 'synchronized' ? (textOffset || 0) : (zone === 'left' ? (design.textOffsetLeft || 0) : (zone === 'right' ? (design.textOffsetRight || 0) : (design.textOffsetCenter || 0)));
-  const rawTextYOffset = copyMode === 'synchronized' ? (textYOffset || 0) : (zone === 'left' ? (design.textYOffsetLeft || 0) : (zone === 'right' ? (design.textYOffsetRight || 0) : (design.textYOffsetCenter || 0)));
-  const rawLogoOffset = copyMode === 'synchronized' ? (logoOffset || 0) : (zone === 'left' ? (design.logoOffsetLeft || 0) : (zone === 'right' ? (design.logoOffsetRight || 0) : (design.logoOffsetCenter || 0)));
-  const rawLogoYOffset = copyMode === 'synchronized' ? (design.logoYOffset || 0) : (zone === 'left' ? (design.logoYOffsetLeft || 0) : (zone === 'right' ? (design.logoYOffsetRight || 0) : (design.logoYOffsetCenter || 0)));
-  const tOffset = rawTextOffset * editorAlongScale;
-  const yOffset = rawTextYOffset * editorCrossScale;
-  const lOffset = rawLogoOffset * editorAlongScale;
-  const lyOffset = rawLogoYOffset * editorCrossScale;
-
-  const mainW = (mainText ? mainText.length : 0) * fs;
-  const subW = (subText ? subText.length : 0) * (fs * 0.55);
-  const textW = Math.max(mainW, subW) * 1.1;
-  const lgW = hasLogo ? (strapW * 0.8 * (logoImg.width / logoImg.height) * logoScale) : 0;
-  
-  const gap = Math.max(30, (textSpacing || 60) * 2 + textW + lgW);
-  const count = Math.max(0, Math.floor(dist / gap));
-  if (count === 0 && !hasLogo) return null;
-
-  const items = [];
-  for (let i = 0; i < count; i++) {
-    // Repeated Items
-    const baseT = (gap * i) / dist;
-    const textT = baseT; // No longer shifting 't' along the strap as we use absolute offsets
-    const logoT = baseT; 
-
-    // Calculate base position on the strap line
-    const baseX = x1 + dx * textT;
-    const baseY = y1 + dy * textT;
-    
-    // For logos, add a small default shift along the strap if we have both text and logo
-    // but we'll use absolute offsets for fine control.
-    const logoBaseX = x1 + dx * (baseT + (textW + 15) / dist);
-    const logoBaseY = y1 + dy * (baseT + (textW + 15) / dist);
-
-
-    // Bound the center text so it doesn't go "out of the box"
-    if (zone === 'center') {
-       if (textT >= 0 && textT <= 1) {
-         if (mainText) items.push({ type: 'text', t: textT, i });
-       }
-       if (logoT >= 0 && logoT <= 1) {
-         if (hasLogo) items.push({ type: 'logo', t: logoT, i });
-       }
-    } else {
-      if (mainText) items.push({ type: 'text', t: textT, i });
-      if (hasLogo) items.push({ type: 'logo', t: logoT, i });
-    }
+  const tx = dx / dist;
+  const ty = dy / dist;
+  let nx = ty;
+  let ny = -tx;
+  if (zone === 'center') {
+    ny = tx;
   }
 
-  const pxOff = tOffset;
-  const pyOff = yOffset;
-
-  const lpxOff = lOffset;
-  const lpyOff = lyOffset;
+  const editorAlongScale = Math.max(dist / STRAP_EDITOR_WIDTH_PX, 0.001);
+  const editorCrossScale = Math.max(strapW / STRAP_EDITOR_HEIGHT_PX, 0.001);
 
   return (
     <Group x={x1} y={y1} clipFunc={(ctx) => clipPolygon(ctx, localClipPoints)}>
@@ -487,31 +460,48 @@ function UnifiedStrapContent({ x1, y1, x2, y2, design, logoImg, strapW, forceNoL
         let px = dx * item.t, py = dy * item.t;
         if (item.t < -0.1 || item.t > 1.1) return null;
 
+        const block = item.block || {};
+
         if (item.type === 'text') {
-          const finalX = px + pxOff;
-          const finalY = py + pyOff;
+          const mainText = forceNoText ? '' : (block.text || '');
+          const subText = lanyardDesignStyle === 'stacked-text' ? (block.textLine2 || '') : null;
+          const hasSubText = subText && lanyardDesignStyle === 'stacked-text';
+          
+          const fs = block.fontSize || fontSize || 16;
+          const lines = [mainText, subText].filter(Boolean);
+          const maxLen = lines.length > 0 ? Math.max(...lines.map(l => l.length || 0)) : 0;
+          const textW = maxLen * fs * 1.1;
           const subTextFs = fs * 0.55;
           const totalHeight = hasSubText ? fs + subTextFs : fs;
-          
+
+          const rawTextOffset = block.textOffset || 0;
+          const rawTextYOffset = block.textYOffset || 0;
+          const pxOff = (rawTextOffset * editorAlongScale) * tx + (rawTextYOffset * editorCrossScale) * nx;
+          const pyOff = (rawTextOffset * editorAlongScale) * ty + (rawTextYOffset * editorCrossScale) * ny;
+
+          const finalX = px + pxOff;
+          const finalY = py + pyOff;
+
           return (
             <Group
-              key={`${item.type}-${item.i}`}
+              key={`${item.type}-${item.id || idx}`}
               x={finalX}
               y={finalY}
               rotation={angle}
-              scaleX={textScaleX}
+              scaleX={editorAlongScale}
+              scaleY={editorCrossScale}
               draggable={showControls}
               onDragEnd={(e) => {
                 const node = e.target;
-                onUpdateText((node.x() - px) / editorAlongScale, (node.y() - py) / editorCrossScale, zone);
+                onUpdateText(block.id, (node.x() - px) / editorAlongScale, (node.y() - py) / editorCrossScale);
               }}
               onTransformEnd={(e) => {
                 const node = e.target;
-                const scaleX = node.scaleX();
+                const scaleX = node.scaleX() / editorAlongScale;
                 const rotation = node.rotation();
-                onUpdateText((node.x() - px) / editorAlongScale, (node.y() - py) / editorCrossScale, zone, scaleX, rotation);
-                node.scaleX(1);
-                node.scaleY(1);
+                onUpdateText(block.id, (node.x() - px) / editorAlongScale, (node.y() - py) / editorCrossScale, scaleX, rotation);
+                node.scaleX(editorAlongScale);
+                node.scaleY(editorCrossScale);
               }}
               onMouseEnter={(e) => {
                 if (showControls) e.target.getStage().container().style.cursor = 'grab';
@@ -523,11 +513,11 @@ function UnifiedStrapContent({ x1, y1, x2, y2, design, logoImg, strapW, forceNoL
               <Text
                 text={mainText}
                 fontSize={fs}
-                fontFamily={fontFamily}
-                fontStyle={fontWeight || 'bold'}
-                lineHeight={lineHeight || 1.2}
-                fill={fontColor}
-                align={textAlign || 'center'}
+                fontFamily={block.fontFamily || fontFamily || 'Montserrat'}
+                fontStyle={block.fontWeight || fontWeight || 'bold'}
+                lineHeight={block.lineHeight || lineHeight || 1.2}
+                fill={block.textColor || fontColor || '#000000'}
+                align={block.textAlign || textAlign || 'center'}
                 wrap="none"
                 width={textW}
                 offsetX={textW / 2}
@@ -538,10 +528,10 @@ function UnifiedStrapContent({ x1, y1, x2, y2, design, logoImg, strapW, forceNoL
                 <Text
                   text={subText}
                   fontSize={subTextFs}
-                  fontFamily={fontFamily}
-                  fill={fontColor}
+                  fontFamily={block.fontFamily || fontFamily || 'Montserrat'}
+                  fill={block.textColor || fontColor || '#000000'}
                   opacity={0.8}
-                  align="center"
+                  align={block.textAlign || textAlign || 'center'}
                   wrap="none"
                   width={textW}
                   x={0}
@@ -550,54 +540,80 @@ function UnifiedStrapContent({ x1, y1, x2, y2, design, logoImg, strapW, forceNoL
                   offsetY={subTextFs / 2}
                 />
               )}
-                  {showControls &&
-                    item.i === 0 && ( /* Only show one delete button for text track */
-                      <Group x={textW / 2 + 8} y={-fs / 2}>
-                        <Circle radius={6} fill="#ef4444" onClick={() => onRemoveText(zone)} cursor="pointer" />
-                        <Text
-                          text="✕"
-                          x={-3}
-                          y={-3.5}
-                          fontSize={7}
-                          fill="#fff"
-                          fontStyle="bold"
-                          listening={false}
-                        />
-                      </Group>
-                    )}
+              {showControls && item.i === 0 && (
+                <Group x={textW / 2 + 8} y={-fs / 2}>
+                  <Circle radius={6} fill="#ef4444" onClick={() => onRemoveText(block.id)} cursor="pointer" />
+                  <Text
+                    text="✕"
+                    x={-3}
+                    y={-3.5}
+                    fontSize={7}
+                    fill="#fff"
+                    fontStyle="bold"
+                    listening={false}
+                  />
                 </Group>
-              );
-            }
+              )}
+            </Group>
+          );
+        }
 
-        const lFinalX = (item.type === 'logo' && item.i !== undefined) ? (dx * (item.t + (textW + 15) / dist)) + lpxOff : px + lpxOff;
-        const lFinalY = (item.type === 'logo' && item.i !== undefined) ? (dy * (item.t + (textW + 15) / dist)) + lpyOff : py + lpyOff;
-        const baseLogoX = (item.type === 'logo' && item.i !== undefined) ? (dx * (item.t + (textW + 15) / dist)) : px;
-        const baseLogoY = (item.type === 'logo' && item.i !== undefined) ? (dy * (item.t + (textW + 15) / dist)) : py;
+        // Logo type
+        const rawLogoOffset = copyMode === 'synchronized' ? (logoOffset || 0) : (zone === 'left' ? (design.logoOffsetLeft || 0) : (zone === 'right' ? (design.logoOffsetRight || 0) : (design.logoOffsetCenter || 0)));
+        const rawLogoYOffset = copyMode === 'synchronized' ? (design.logoYOffset || 0) : (zone === 'left' ? (design.logoYOffsetLeft || 0) : (zone === 'right' ? (design.logoYOffsetRight || 0) : (design.logoYOffsetCenter || 0)));
+        const lpxOff = (rawLogoOffset * editorAlongScale) * tx + (rawLogoYOffset * editorCrossScale) * nx;
+        const lpyOff = (rawLogoOffset * editorAlongScale) * ty + (rawLogoYOffset * editorCrossScale) * ny;
+
+        const baseLogoX = px;
+        const baseLogoY = py;
+        const lFinalX = px + lpxOff;
+        const lFinalY = py + lpyOff;
+
+        if (!logoImg || forceNoLogo) return null;
+
+        const lgH = 70 * 0.8 * logoScale;
+        const lgW = lgH * (logoImg.width / logoImg.height);
 
         return (
-          <Group 
-            key={`${item.type}-${item.i}`} x={lFinalX} y={lFinalY} rotation={angle} scaleX={textScaleX}
-            draggable={showControls} 
+          <Group
+            key={`${item.type}-${item.id || idx}`}
+            x={lFinalX}
+            y={lFinalY}
+            rotation={angle}
+            scaleX={editorAlongScale}
+            scaleY={editorCrossScale}
+            draggable={showControls}
             onDragEnd={(e) => {
               const node = e.target;
               onUpdateLogo((node.x() - baseLogoX) / editorAlongScale, (node.y() - baseLogoY) / editorCrossScale, zone);
             }}
             onTransformEnd={(e) => {
               const node = e.target;
-              const scaleX = node.scaleX();
+              const scaleX = node.scaleX() / editorAlongScale;
               const rotation = node.rotation();
               onUpdateLogo((node.x() - baseLogoX) / editorAlongScale, (node.y() - baseLogoY) / editorCrossScale, zone, scaleX, rotation);
-              node.scaleX(1);
-              node.scaleY(1);
+              node.scaleX(editorAlongScale);
+              node.scaleY(editorCrossScale);
             }}
-            onMouseEnter={(e) => { if (showControls) e.target.getStage().container().style.cursor = 'grab'; }}
-            onMouseLeave={(e) => { e.target.getStage().container().style.cursor = 'default'; }}
+            onMouseEnter={(e) => {
+              if (showControls) e.target.getStage().container().style.cursor = 'grab';
+            }}
+            onMouseLeave={(e) => {
+              e.target.getStage().container().style.cursor = 'default';
+            }}
           >
-            <Image image={logoImg} width={lgW} height={strapW*0.8*logoScale} offsetY={(strapW*0.8*logoScale)/2} offsetX={lgW/2} rotation={logoRotation || 0} />
+            <Image
+              image={logoImg}
+              width={lgW}
+              height={lgH}
+              offsetY={lgH / 2}
+              offsetX={lgW / 2}
+              rotation={logoRotation || 0}
+            />
             {showControls && item.i === 0 && (
-              <Group x={lgW/2 + 8} y={-(strapW*0.8*logoScale)/2}>
-                 <Circle radius={6} fill="#ef4444" onClick={() => onRemoveLogo(zone)} cursor="pointer" />
-                 <Text text="✕" x={-3} y={-3.5} fontSize={7} fill="#fff" fontStyle="bold" listening={false} />
+              <Group x={lgW / 2 + 8} y={-lgH / 2}>
+                <Circle radius={6} fill="#ef4444" onClick={() => onRemoveLogo(zone)} cursor="pointer" />
+                <Text text="✕" x={-3} y={-3.5} fontSize={7} fill="#fff" fontStyle="bold" listening={false} />
               </Group>
             )}
           </Group>
@@ -712,7 +728,7 @@ function LanyardStage({
       textLine3: design.textLine3 || '',
       textOffset: design.textOffset || 0,
       textYOffset: design.textYOffset || 0,
-      textColor: design.textColor || '#ffffff',
+      textColor: design.textColor || '#000000',
       fontSize: design.fontSize || 16,
       letterSpacing: design.letterSpacing || 0,
       textStrokeWidth: design.textStrokeWidth || 0,
@@ -723,17 +739,8 @@ function LanyardStage({
     }];
   }, [design.textBlocks, design.text, design.textLine2, design.textLine3, design.textOffset, design.textYOffset, design.textColor, design.fontSize, design.letterSpacing, design.textStrokeWidth, design.textStrokeColor, design.textShadowBlur, design.fontFamily, design.fontWeight]);
 
-  const continuousItems = useMemo(() => {
-    const leftItems = [];
-    const centerItems = [];
-    const rightItems = [];
-
-    // Calculate segment lengths
-    const distLeft = Math.hypot(leftCL.x2 - leftCL.x1, leftCL.y2 - leftCL.y1);
-    const distCenter = Math.hypot((CX + SPREAD - 10) - (CX - SPREAD + 10), 0);
-    const distRight = Math.hypot(rightCL.x2 - rightCL.x1, rightCL.y2 - rightCL.y1);
-    const totalPathLength = distLeft + distCenter + distRight;
-
+  const virtualItems = useMemo(() => {
+    const items = [];
     textBlocks.forEach((block) => {
       const bText = block.text || '';
       const bL2 = block.textLine2 || '';
@@ -741,77 +748,48 @@ function LanyardStage({
       if (!bText && !logoImg) return;
 
       const lines = [bText, bL2, bL3].filter(Boolean);
-      const fs = Math.min(block.fontSize || 16, strapW * 0.7);
+      const fs = block.fontSize || 16;
       const maxLen = lines.length > 0 ? Math.max(...lines.map(l => l.length || 0)) : 0;
       const textW = maxLen * fs * 1.1;
-      const lgW = logoImg ? (strapW * 0.8 * (logoImg.width / logoImg.height) * (design.logoScale || 1)) : 0;
+      const lgW = logoImg ? (70 * 0.8 * (logoImg.width / logoImg.height) * (design.logoScale || 1)) : 0;
 
       const gap = Math.max(30, (design.textSpacing || 60) * 2 + textW + lgW);
       const count = Math.max(1, Math.floor(800 / gap));
 
       for (let i = 0; i < count; i++) {
-        // Center repeats along the virtual 800px continuous path
         const baseDistanceVirtual = (800 / (count + 1)) * (i + 1);
         let dVirtualText = baseDistanceVirtual + (block.textOffset || 0);
         dVirtualText = (dVirtualText % 800 + 800) % 800;
 
-        // Map to 3D path distance
-        const dText = dVirtualText * (totalPathLength / 800);
-
-        // Helper to map distance to segment and local t
-        const mapDistanceToSegment = (d) => {
-          if (d < distLeft) {
-            return { zone: 'left', t: 1 - (d / distLeft) };
-          } else if (d < distLeft + distCenter) {
-            return { zone: 'center', t: (d - distLeft) / distCenter };
-          } else {
-            return { zone: 'right', t: (d - distLeft - distCenter) / distRight };
-          }
-        };
-
-        const textPlacement = mapDistanceToSegment(dText);
-        
         if (bText) {
-          const item = {
+          items.push({
             id: `${block.id}-${i}-text`,
             block,
             type: 'text',
-            t: textPlacement.t,
+            t: dVirtualText / 800,
             i,
             textW,
             fs,
-            count,
-          };
-          if (textPlacement.zone === 'left') leftItems.push(item);
-          else if (textPlacement.zone === 'center') centerItems.push(item);
-          else rightItems.push(item);
+          });
         }
 
         if (logoImg && !design.forceNoLogo) {
-          // Place logo offset relative to virtual coordinates
-          let dVirtualLogo = dVirtualText + (textW + 15) * (800 / totalPathLength);
+          let dVirtualLogo = dVirtualText + (textW + 15);
           dVirtualLogo = (dVirtualLogo % 800 + 800) % 800;
-          const dLogo = dVirtualLogo * (totalPathLength / 800);
-          const logoPlacement = mapDistanceToSegment(dLogo);
-          const item = {
+          items.push({
             id: `${block.id}-${i}-logo`,
             block,
             type: 'logo',
-            t: logoPlacement.t,
+            t: dVirtualLogo / 800,
             i,
             textW,
             fs,
-            count,
-          };
-          if (logoPlacement.zone === 'left') leftItems.push(item);
-          else if (logoPlacement.zone === 'center') centerItems.push(item);
-          else rightItems.push(item);
+          });
         }
       }
     });
-
-    return { leftItems, centerItems, rightItems, distLeft, distCenter, distRight, totalPathLength };
-  }, [textBlocks, logoImg, strapW, design.logoScale, design.textSpacing, design.forceNoLogo, leftCL, rightCL, CX, SPREAD]);
+    return items;
+  }, [textBlocks, logoImg, strapW, design.logoScale, design.textSpacing, design.forceNoLogo]);
 
   const onUpdateTextBlockText = (blockId, dX, dY, scale, rotation) => {
     const updated = textBlocks.map(b => {
@@ -1034,7 +1012,7 @@ function LanyardStage({
                 <UnifiedStrapContent 
                   {...rightCL} 
                   design={design} 
-                  items={continuousItems.rightItems} 
+                  items={virtualItems} 
                   logoImg={logoImg} 
                   strapW={strapW} 
                   onUpdateText={onUpdateTextBlockText} 
@@ -1043,10 +1021,6 @@ function LanyardStage({
                   onRemoveLogo={onRemoveLogo} 
                   showControls={showControls} 
                   zone="right" 
-                  setIsDraggingElement={setIsDraggingElement}
-                  distLeft={continuousItems.distLeft}
-                  distCenter={continuousItems.distCenter}
-                  totalPathLength={continuousItems.totalPathLength}
                 />
                 <CustomElements3D elements={design.strapElements?.right} strapW={strapW} {...rightCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} isRightStrap={true} dualCanvasMode={design.dualCanvasMode} />
 
@@ -1068,7 +1042,7 @@ function LanyardStage({
                   x2={CX + SPREAD - 10} 
                   y2={TOP_Y + strapW/2} 
                   design={design} 
-                  items={continuousItems.centerItems} 
+                  items={virtualItems} 
                   logoImg={logoImg} 
                   strapW={strapW} 
                   onUpdateText={onUpdateTextBlockText} 
@@ -1077,10 +1051,6 @@ function LanyardStage({
                   onRemoveLogo={onRemoveLogo} 
                   showControls={showControls} 
                   zone="center" 
-                  setIsDraggingElement={setIsDraggingElement}
-                  distLeft={continuousItems.distLeft}
-                  distCenter={continuousItems.distCenter}
-                  totalPathLength={continuousItems.totalPathLength}
                 />
                 <CustomElements3D elements={design.strapElements?.center} strapW={strapW} x1={CX - SPREAD + 10} y1={TOP_Y + strapW/2} x2={CX + SPREAD - 10} y2={TOP_Y + strapW/2} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
 
@@ -1099,7 +1069,7 @@ function LanyardStage({
                 <UnifiedStrapContent 
                   {...leftCL} 
                   design={design} 
-                  items={continuousItems.leftItems} 
+                  items={virtualItems} 
                   logoImg={logoImg} 
                   strapW={strapW} 
                   onUpdateText={onUpdateTextBlockText} 
@@ -1108,10 +1078,6 @@ function LanyardStage({
                   onRemoveLogo={onRemoveLogo} 
                   showControls={showControls} 
                   zone="left" 
-                  setIsDraggingElement={setIsDraggingElement}
-                  distLeft={continuousItems.distLeft}
-                  distCenter={continuousItems.distCenter}
-                  totalPathLength={continuousItems.totalPathLength}
                 />
                 <CustomElements3D elements={design.strapElements?.left} strapW={strapW} {...leftCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
 

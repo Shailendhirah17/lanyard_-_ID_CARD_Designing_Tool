@@ -50,7 +50,7 @@ export default function FlatStrapView() {
       textLine3: design.textLine3 || '',
       textOffset: design.textOffset || 0,
       textYOffset: design.textYOffset || 0,
-      textColor: design.textColor || '#ffffff',
+      textColor: design.textColor || '#000000',
       fontSize: design.fontSize || 16,
       letterSpacing: design.letterSpacing || 0,
       textStrokeWidth: design.textStrokeWidth || 0,
@@ -62,7 +62,7 @@ export default function FlatStrapView() {
   }, [design.textBlocks, design.text, design.textLine2, design.textLine3, design.textOffset, design.textYOffset, design.textColor, design.fontSize, design.letterSpacing, design.textStrokeWidth, design.textStrokeColor, design.textShadowBlur, design.fontFamily, design.fontWeight]);
 
   const fontSize = Math.min(design.fontSize || 16, strapWidthPx * 0.55);
-  const textColor = design.textColor || design.fontColor || '#ffffff';
+  const textColor = design.textColor || design.fontColor || '#000000';
   const fontFamily = design.fontFamily || 'Montserrat';
   const fontStyle = design.fontWeight || 'bold';
 
