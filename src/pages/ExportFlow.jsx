@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useConfiguratorStore } from '../store/useConfiguratorStore';
 import {
   CheckCircle2,
   Package,
@@ -540,12 +541,14 @@ function ConfirmStep({ project, format, quantity, onPlaceOrder, success }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function ExportFlow({ project, pricing }) {
+export default function ExportFlow({ project, pricing, user }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [selectedFormat, setSelectedFormat] = useState('pdf-print');
   const [quantity, setQuantity] = useState(pricing?.quantity ?? 100);
   const [successInfo, setSuccessInfo] = useState(null);
+  
+  const design = useConfiguratorStore((s) => s.design);
 
   const canProceed = () => {
     if (step === 1) return !!selectedFormat;
@@ -566,8 +569,76 @@ export default function ExportFlow({ project, pricing }) {
   };
 
   const handlePlaceOrder = (address) => {
+    const orderId = generateOrderId();
+    const unitPrice = getPricePerUnit(quantity);
+    const total = unitPrice * quantity;
+
+    // Retrieve captured canvas previews
+    const previewImage = localStorage.getItem('lanyard_temp_preview') || '';
+    const idCardPreviewImage = localStorage.getItem('lanyard_temp_card_preview') || '';
+
+    // Clear temporary items
+    localStorage.removeItem('lanyard_temp_preview');
+    localStorage.removeItem('lanyard_temp_card_preview');
+
+    const newOrder = {
+      id: orderId,
+      customer: user?.name || 'Guest User',
+      email: user?.email || 'guest@test.com',
+      userEmail: user?.email || 'guest@test.com',
+      date: new Date().toISOString().split('T')[0],
+      status: 'Pending',
+      total: total,
+      designName: project?.name || design?.idCard?.name || 'Custom Design',
+      quantity: quantity,
+      pricePerUnit: unitPrice,
+      address: address,
+      format: formatLabel(selectedFormat),
+      previewImage: previewImage.length > 500000 ? '' : previewImage,
+      idCardPreview: idCardPreviewImage.length > 500000 ? '' : idCardPreviewImage,
+      design: {
+        printingMethod: design?.printingMethod,
+        lanyardStyle: design?.lanyardStyle,
+        width: design?.width,
+        length: design?.length,
+        lanyardColor: design?.lanyardColor,
+        clipType: design?.clipType,
+        accessories: design?.accessories,
+        idCardSize: design?.idCard?.size,
+        idCardFrontBg: design?.idCard?.front?.backgroundColor,
+        idCardBackBg: design?.idCard?.back?.backgroundColor,
+        customTextLeft: design?.customTextLeft,
+        customTextCenter: design?.customTextCenter,
+        customTextRight: design?.customTextRight,
+        textColor: design?.textColor,
+        fontFamily: design?.fontFamily,
+      }
+    };
+
+    // Save to localStorage
+    try {
+      const existingOrders = JSON.parse(localStorage.getItem('myLanyardOrders') || '[]');
+      localStorage.setItem('myLanyardOrders', JSON.stringify([newOrder, ...existingOrders].slice(0, 15)));
+    } catch (e) {
+      localStorage.setItem('myLanyardOrders', JSON.stringify([newOrder]));
+    }
+
+    // Attempt backend sync
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
+    fetch(`${API_URL}/api/design-requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        design: { ...design, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 500000 ? '' : previewImage },
+        order: { quantity, pricePerUnit: unitPrice, totalPriceInInr: total },
+      }),
+    }).catch(e => console.warn('Backend unavailable, saved locally.', e));
+
+    // Trigger update event
+    window.dispatchEvent(new Event('orderStatusUpdated'));
+
     setSuccessInfo({
-      orderId: generateOrderId(),
+      orderId: orderId,
       delivery: '3-5 business days',
       address,
       onDashboard: () => navigate('/dashboard'),

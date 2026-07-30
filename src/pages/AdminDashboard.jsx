@@ -314,6 +314,81 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
+
+                {/* Technical Specifications Grid */}
+                <div className="bg-white rounded-[32px] p-8 border border-[#eef2f6] shadow-sm space-y-6 w-full text-left">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-[#eef2f6] pb-3">
+                    <Info size={14} className="text-[#5d5fef]" /> Order Specifications
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[#919191]">Width:</span>
+                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.width || '20mm'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[#919191]">Length:</span>
+                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.length || '38 inches'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[#919191]">Printing Method:</span>
+                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.printingMethod || 'Sublimated'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[#919191]">Lanyard Style:</span>
+                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.lanyardStyle || 'Single Ended'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[#919191]">Lanyard Color:</span>
+                      <span className="font-bold text-[#1a1a1a] flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: selectedOrder.design?.lanyardColor || '#ffffff' }} />
+                        {selectedOrder.design?.lanyardColor || '#ffffff'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-[#919191]">Clip Type:</span>
+                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.clipType || 'Metal Hook'}</span>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2 col-span-2">
+                      <span className="text-[#919191]">Accessories:</span>
+                      <span className="font-bold text-[#1a1a1a]">{(selectedOrder.design?.accessories || ['Badge Holder']).join(', ')}</span>
+                    </div>
+                    
+                    {selectedOrder.design?.customTextLeft || selectedOrder.design?.customTextCenter || selectedOrder.design?.customTextRight ? (
+                      <div className="col-span-2 pt-2 space-y-2">
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Custom Lanyard Text</span>
+                        <div className="bg-[#f8faff] p-4 rounded-2xl border border-[#eef2f6] font-mono text-xs text-slate-600 break-all space-y-1">
+                          {selectedOrder.design?.customTextLeft && <p>Left Strap: "{selectedOrder.design.customTextLeft}"</p>}
+                          {selectedOrder.design?.customTextCenter && <p>Center Strap: "{selectedOrder.design.customTextCenter}"</p>}
+                          {selectedOrder.design?.customTextRight && <p>Right Strap: "{selectedOrder.design.customTextRight}"</p>}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {selectedOrder.design?.idCardSize ? (
+                      <div className="col-span-2 pt-4 border-t border-[#eef2f6] grid grid-cols-2 gap-x-8 gap-y-4">
+                        <div className="flex justify-between col-span-2 border-b border-slate-100 pb-2">
+                          <span className="text-[#919191]">ID Card Size:</span>
+                          <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.idCardSize}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-100 pb-2">
+                          <span className="text-[#919191]">Front BG:</span>
+                          <span className="font-bold text-[#1a1a1a] flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: selectedOrder.design?.idCardFrontBg || '#ffffff' }} />
+                            {selectedOrder.design?.idCardFrontBg || '#ffffff'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-100 pb-2">
+                          <span className="text-[#919191]">Back BG:</span>
+                          <span className="font-bold text-[#1a1a1a] flex items-center gap-1.5">
+                            <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: selectedOrder.design?.idCardBackBg || '#ffffff' }} />
+                            {selectedOrder.design?.idCardBackBg || '#ffffff'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
               </div>
             </div>
 

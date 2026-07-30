@@ -118,6 +118,7 @@ export default function App() {
   const uploads  = useConfiguratorStore(s => s.uploads);
   const saveLocal = useConfiguratorStore(s => s.saveLocal);
   const pricing  = useMemo(() => calculatePricing(design), [design]);
+  const { activeProject } = useProjectStore();
 
   // ── Login handler ──────────────────────────────────────────────
   const handleLogin = (userData) => {
@@ -400,7 +401,7 @@ export default function App() {
             {/* ── Export & order flow ── */}
             <Route path="/export" element={
               <RequireAuth user={user}>
-                <ExportFlow pricing={{ pricePerUnit: 45, total: 45, quantity: 1 }} />
+                <ExportFlow project={activeProject} pricing={pricing} user={user} />
               </RequireAuth>
             } />
 
