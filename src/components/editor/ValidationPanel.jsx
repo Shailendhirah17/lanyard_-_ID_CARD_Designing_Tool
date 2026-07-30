@@ -15,7 +15,7 @@ function getChecks(design) {
   const hasLogo = !!design?.logoUrl;
   const hasColor = !!(design?.lanyardColor && design.lanyardColor !== '#ffffff');
   const isSubbed = design?.printingMethod === 'Sublimated';
-  const fontColor = design?.fontColor || design?.textColor || '#ffffff';
+  const fontColor = design?.fontColor || design?.textColor || '#000000';
 
   // Check contrast: white text on white strap is a fail
   const isLowContrast = (

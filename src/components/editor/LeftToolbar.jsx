@@ -1137,7 +1137,7 @@ function TextPanel({ onAdd }) {
       textLine3: design.textLine3 || '',
       textOffset: design.textOffset || 0,
       textYOffset: design.textYOffset || 0,
-      textColor: design.textColor || '#ffffff',
+      textColor: design.textColor || '#000000',
       fontSize: design.fontSize || 16,
       letterSpacing: design.letterSpacing || 0,
       textStrokeWidth: design.textStrokeWidth || 0,
@@ -1152,7 +1152,7 @@ function TextPanel({ onAdd }) {
     return textBlocks.find(b => b.id === selectedBlockId) || textBlocks[0] || {};
   }, [textBlocks, selectedBlockId]);
 
-  const textColor = selectedBlock.textColor || '#ffffff';
+  const textColor = selectedBlock.textColor || '#000000';
   const fontFamily = selectedBlock.fontFamily || 'Inter';
   const fontSize = selectedBlock.fontSize || 16;
   const letterSpacing = selectedBlock.letterSpacing || 0;
@@ -1799,8 +1799,6 @@ const TABS = [
   { key: 'elements', icon: Shapes, label: 'Elements' },
   { key: 'text', icon: Type, label: 'Text' },
   { key: 'upload', icon: Upload, label: 'Upload' },
-  { key: 'ai', icon: Sparkles, label: 'AI' },
-  { key: 'brand', icon: Palette, label: 'Brand Kit' },
 ];
 
 // --- Main Left Toolbar ---

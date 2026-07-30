@@ -31,7 +31,7 @@ function StrapThumbnail({ zone, design, strapColor }) {
           <Text
             text={design.text}
             fontSize={Math.max(8, strapW * 0.5)}
-            fill={design.textColor || '#ffffff'}
+            fill={design.textColor || '#000000'}
             fontFamily={design.fontFamily || 'Inter'}
             x={zone === 'left' ? CX - SPREAD + 10 : zone === 'right' ? CX + 10 : CX - 60}
             y={zone === 'center' ? TOP_Y : (CRIMP_Y + TOP_Y) / 2}

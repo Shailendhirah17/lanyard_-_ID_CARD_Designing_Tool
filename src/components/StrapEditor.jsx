@@ -1530,7 +1530,7 @@ export default function StrapEditor({ zone, onClose }) {
     const ratio = sourceWidth / Math.max(sourceHeight, 1);
     const logoWidth = ratio >= 1 ? 44 : 30;
     const logoHeight = Math.round(logoWidth / Math.max(ratio, 0.1));
-    const textColor = HEX_COLOR_PATTERN.test(state.fontColor || '') ? state.fontColor : '#ffffff';
+    const textColor = HEX_COLOR_PATTERN.test(state.fontColor || '') ? state.fontColor : '#000000';
     const tagline = brandKit.tagline.trim();
     const textContent = tagline ? `${normalizedName} · ${tagline}` : normalizedName;
 
