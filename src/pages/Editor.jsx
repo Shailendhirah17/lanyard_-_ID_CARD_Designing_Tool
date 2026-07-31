@@ -103,6 +103,14 @@ export default function Editor() {
   }, [saveLocal, saveProject, updateActiveProject]);
 
   const handleExport = (format) => {
+    try {
+      const preview = stageRef.current?.toDataURL({ pixelRatio: 1 }) || '';
+      const cardPreview = idCardStageRef.current?.toDataURL({ pixelRatio: 1 }) || '';
+      localStorage.setItem('lanyard_temp_preview', preview);
+      localStorage.setItem('lanyard_temp_card_preview', cardPreview);
+    } catch (e) {
+      console.warn('Could not save temp preview', e);
+    }
     navigate('/export');
   };
 
