@@ -8,6 +8,8 @@ import { getPatternById } from '../data/strapPatterns';
 import {
   getElementBoundsPx,
   getLanyardStageGeometry,
+  getStageStrapWidthPx,
+  getStrapLengthInches,
   mapEditorElementToStrap,
   STRAP_EDITOR_HEIGHT_PX,
   STRAP_EDITOR_WIDTH_PX,
@@ -632,6 +634,67 @@ const getClipHeight = (clipType) => {
   }
 };
 
+function getSingleLanyardGeometry(CX, width, length) {
+  const strapW = getStageStrapWidthPx(width);
+  const lengthInches = getStrapLengthInches(length);
+  const LOOP_H = Math.round((lengthInches / 38) * 450);
+  const TOP_Y = 50;
+  const SPREAD = 135;
+  const TIP_Y = TOP_Y + LOOP_H;
+  const CRIMP_Y = TIP_Y - 50;
+  const CRIMP_H = 32;
+
+  return {
+    strapW,
+    CX,
+    TOP_Y,
+    LOOP_H,
+    SPREAD,
+    TIP_Y,
+    CRIMP_Y,
+    CRIMP_H,
+    barPts: [
+      CX - SPREAD, TOP_Y,
+      CX + SPREAD, TOP_Y,
+      CX + SPREAD, TOP_Y + strapW,
+      CX - SPREAD, TOP_Y + strapW,
+    ],
+    leftStrap: [
+      CX - SPREAD, TOP_Y + strapW,
+      CX - SPREAD + strapW, TOP_Y + strapW,
+      CX + strapW / 2, CRIMP_Y,
+      CX - strapW / 2, CRIMP_Y,
+    ],
+    rightStrap: [
+      CX + SPREAD, TOP_Y + strapW,
+      CX + strapW / 2, CRIMP_Y,
+      CX - strapW / 2, CRIMP_Y,
+      CX + SPREAD - strapW, TOP_Y + strapW,
+    ],
+    connectorPts: [
+      CX - strapW / 2, CRIMP_Y + CRIMP_H - 2,
+      CX + strapW / 2, CRIMP_Y + CRIMP_H - 2,
+      CX + strapW / 2, TIP_Y,
+      CX - strapW / 2, TIP_Y,
+    ],
+    leftCL: {
+      x1: CX - SPREAD + strapW / 2,
+      y1: TOP_Y + strapW + 20,
+      x2: CX,
+      y2: CRIMP_Y - 20,
+    },
+    rightCL: {
+      x1: CX + SPREAD - strapW / 2,
+      y1: TOP_Y + strapW + 20,
+      x2: CX,
+      y2: CRIMP_Y - 20,
+    },
+  };
+}
+
+const STAGE_2D_WIDTH = 900;
+const STAGE_2D_HEIGHT = 820;
+
 function LanyardStage({
   zoom = 1,
   stageRef,
@@ -639,7 +702,6 @@ function LanyardStage({
   showIdCard = false,
   onEditStrap,
   tempDesign,
-  showInspectControls = true,
 }) {
   const showControls = currentStep === 2;
   const storeDesign = useConfiguratorStore((s) => s.design);
@@ -668,54 +730,12 @@ function LanyardStage({
     };
   }, [design.idCard.size]);
 
-  // 3D Rotation State (Default values modified to look more like a 3D model view)
-  const rotateX = useMotionValue(-15);
-  const rotateY = useMotionValue(-20);
-  const springRotateX = useSpring(rotateX, { stiffness: 150, damping: 25 });
-  const springRotateY = useSpring(rotateY, { stiffness: 150, damping: 25 });
-
-  const adjustRotation = useCallback((deltaX, deltaY) => {
-    rotateX.set(clampRotation(rotateX.get() + deltaX, -55, 20));
-    rotateY.set(clampRotation(rotateY.get() + deltaY, -70, 70));
-  }, [rotateX, rotateY]);
-
-  const handleDrag = useCallback((event, info) => {
-    adjustRotation(-info.delta.y * 0.5, info.delta.x * 0.5);
-  }, [adjustRotation]);
-
-  const resetRotation = () => {
-    rotateX.set(-15);
-    rotateY.set(-20);
-  };
-
-  const viewResetTrigger = storeDesign.viewResetTrigger;
-  useEffect(() => {
-    if (viewResetTrigger > 0) {
-      resetRotation();
-    }
-  }, [viewResetTrigger]);
-
-  const scale = Math.max(0.35, (Math.min(containerWidth - 32, BASE_WIDTH) / BASE_WIDTH) * zoom);
+  const scale = Math.max(0.35, (Math.min(containerWidth - 32, STAGE_2D_WIDTH) / STAGE_2D_WIDTH) * zoom);
   
-  const {
-    strapW,
-    CX,
-    TOP_Y,
-    SPREAD,
-    TIP_Y,
-    CRIMP_Y,
-    barPts,
-    leftStrap,
-    rightStrap,
-    connectorPts,
-    leftCL,
-    rightCL,
-  } = useMemo(() => getLanyardStageGeometry(design.width), [design.width]);
+  // Left lanyard (Front View) & Right lanyard (Back View) geometry
+  const geomFront = useMemo(() => getSingleLanyardGeometry(250, design.width, design.length), [design.width, design.length]);
+  const geomBack = useMemo(() => getSingleLanyardGeometry(650, design.width, design.length), [design.width, design.length]);
   
-  // ─── Top-Center Layout Constants ──────────────────────────────────────────
-
-  // Points for a V-shape lanyard hanging from top-center
-
   const textBlocks = useMemo(() => {
     const list = design.textBlocks || [];
     if (list.length > 0) return list;
@@ -739,57 +759,78 @@ function LanyardStage({
     }];
   }, [design.textBlocks, design.text, design.textLine2, design.textLine3, design.textOffset, design.textYOffset, design.textColor, design.fontSize, design.letterSpacing, design.textStrokeWidth, design.textStrokeColor, design.textShadowBlur, design.fontFamily, design.fontWeight]);
 
-  const virtualItems = useMemo(() => {
+  const getVirtualItemsForZone = useCallback((zone, isBackView = false) => {
+    let zoneText = '';
+    if (!isBackView) {
+      if (zone === 'left') zoneText = design.customTextLeft || design.text || 'RAVENCLAW';
+      else if (zone === 'right') zoneText = design.customTextRight || design.text || 'UNIVERSITY';
+      else zoneText = design.customTextCenter || 'STAFF / VIP';
+    } else {
+      if (zone === 'left') zoneText = design.customTextRight || design.text || 'UNIVERSITY';
+      else if (zone === 'right') zoneText = design.customTextLeft || design.text || 'RAVENCLAW';
+      else zoneText = design.customTextCenter || '';
+    }
+
     const items = [];
-    textBlocks.forEach((block) => {
-      const bText = block.text || '';
-      const bL2 = block.textLine2 || '';
-      const bL3 = block.textLine3 || '';
-      if (!bText && !logoImg) return;
 
-      const lines = [bText, bL2, bL3].filter(Boolean);
-      const fs = block.fontSize || 16;
-      const maxLen = lines.length > 0 ? Math.max(...lines.map(l => l.length || 0)) : 0;
-      const textW = maxLen * fs * 1.1;
-      const lgW = logoImg ? (70 * 0.8 * (logoImg.width / logoImg.height) * (design.logoScale || 1)) : 0;
-
+    if (zoneText) {
+      const fs = design.fontSize || 16;
+      const textW = zoneText.length * fs * 1.1;
+      const lgW = (logoImg && !isBackView) ? (70 * 0.8 * (logoImg.width / logoImg.height) * (design.logoScale || 1)) : 0;
       const gap = Math.max(30, (design.textSpacing || 60) * 2 + textW + lgW);
-      const count = Math.max(1, Math.floor(800 / gap));
+      const count = Math.max(1, Math.floor(700 / gap));
 
       for (let i = 0; i < count; i++) {
-        const baseDistanceVirtual = (800 / (count + 1)) * (i + 1);
-        let dVirtualText = baseDistanceVirtual + (block.textOffset || 0);
-        dVirtualText = (dVirtualText % 800 + 800) % 800;
+        const baseDistance = (700 / (count + 1)) * (i + 1);
+        let dText = baseDistance + (design.textOffset || 0);
+        dText = (dText % 700 + 700) % 700;
 
-        if (bText) {
-          items.push({
-            id: `${block.id}-${i}-text`,
-            block,
-            type: 'text',
-            t: dVirtualText / 800,
-            i,
-            textW,
-            fs,
-          });
-        }
+        items.push({
+          id: `${zone}-${isBackView ? 'back' : 'front'}-${i}-text`,
+          block: {
+            text: zoneText,
+            fontSize: fs,
+            fontFamily: design.fontFamily || 'Montserrat',
+            fontWeight: design.fontWeight || 'bold',
+            textColor: design.textColor || design.fontColor || '#000000',
+          },
+          type: 'text',
+          t: dText / 700,
+          i,
+          textW,
+          fs,
+        });
 
-        if (logoImg && !design.forceNoLogo) {
-          let dVirtualLogo = dVirtualText + (textW + 15);
-          dVirtualLogo = (dVirtualLogo % 800 + 800) % 800;
+        if (logoImg && !design.forceNoLogo && !isBackView) {
+          let dLogo = dText + (textW + 15);
+          dLogo = (dLogo % 700 + 700) % 700;
           items.push({
-            id: `${block.id}-${i}-logo`,
-            block,
+            id: `${zone}-${isBackView ? 'back' : 'front'}-${i}-logo`,
+            block: { text: '' },
             type: 'logo',
-            t: dVirtualLogo / 800,
+            t: dLogo / 700,
             i,
             textW,
             fs,
           });
         }
       }
-    });
+    }
+
+    if (isBackView && zone === 'center' && logoImg && !design.forceNoLogo) {
+      items.push({
+        id: `back-center-logo`,
+        block: { text: '' },
+        type: 'logo',
+        t: 0.5,
+        i: 0,
+        textW: 0,
+        fs: design.fontSize || 16,
+      });
+    }
+
     return items;
-  }, [textBlocks, logoImg, strapW, design.logoScale, design.textSpacing, design.forceNoLogo]);
+  }, [design.customTextLeft, design.customTextRight, design.customTextCenter, design.text, design.fontSize, design.fontFamily, design.fontWeight, design.textColor, design.fontColor, design.textSpacing, design.textOffset, design.logoScale, design.forceNoLogo, logoImg]);
 
   const onUpdateTextBlockText = (blockId, dX, dY, scale, rotation) => {
     const updated = textBlocks.map(b => {
@@ -805,7 +846,6 @@ function LanyardStage({
     });
     setField('textBlocks', updated);
     
-    // Backward compatibility sync for block-1
     if (blockId === 'block-1') {
       setField('textOffset', dX);
       setField('textYOffset', dY);
@@ -827,62 +867,25 @@ function LanyardStage({
     }
   };
 
-  const onUpdateText = (dX, dY, zone, scale, rotation) => {
-    if (design.copyMode === 'synchronized') {
-      setField('textOffset', dX);
-      setField('textYOffset', dY);
-    } else {
-      const alongField = zone === 'left' ? 'textOffsetLeft' : (zone === 'right' ? 'textOffsetRight' : 'textOffsetCenter');
-      const perpField = zone === 'left' ? 'textYOffsetLeft' : (zone === 'right' ? 'textYOffsetRight' : 'textYOffsetCenter');
-      setField(alongField, dX);
-      setField(perpField, dY);
-    }
-    setField('fontSize', design.fontSize * (scale || 1));
-    setField('textAngle', (design.textAngle || 0) + (rotation || 0));
-  };
   const onUpdateLogo = (dX, dY, zone, scale, rotation) => {
     if (design.copyMode === 'synchronized') {
       setField('logoOffset', dX);
       setField('logoYOffset', dY);
     } else {
-      const alongFieldByZone = {
-        left: 'logoOffsetLeft',
-        center: 'logoOffsetCenter',
-        right: 'logoOffsetRight',
-      };
-      const perpFieldByZone = {
-        left: 'logoYOffsetLeft',
-        center: 'logoYOffsetCenter',
-        right: 'logoYOffsetRight',
-      };
-      const alongField = alongFieldByZone[zone] || 'logoOffsetCenter';
-      const perpField = perpFieldByZone[zone] || 'logoYOffsetCenter';
-      setField(alongField, dX);
-      setField(perpField, dY);
+      const alongFieldByZone = { left: 'logoOffsetLeft', center: 'logoOffsetCenter', right: 'logoOffsetRight' };
+      const perpFieldByZone = { left: 'logoYOffsetLeft', center: 'logoYOffsetCenter', right: 'logoYOffsetRight' };
+      setField(alongFieldByZone[zone] || 'logoOffsetCenter', dX);
+      setField(perpFieldByZone[zone] || 'logoYOffsetCenter', dY);
     }
     setField('logoScale', design.logoScale * (scale || 1));
     setField('logoRotation', (design.logoRotation || 0) + (rotation || 0));
   };
-  const onRemoveText = (zone) => {
-    if (design.copyMode === 'synchronized') {
-      setField('customTextLeft', '');
-      setField('customTextCenter', '');
-      setField('customTextRight', '');
-    } else {
-      const fieldPath = zone === 'left' ? 'customTextLeft' : (zone === 'right' ? 'customTextRight' : 'customTextCenter');
-      setField(fieldPath, '');
-    }
-  };
-  const onRemoveLogo = (/* zone */) => {
-    // Currently logo is shared across zones but repeated. 
-    // The user can't "hide" one logo yet if they are in 'repeated' style, 
-    // but they can hide it by moving it out of bounds in multi-zone.
-    // If they click X, we remove it from the whole design (shared logo).
+
+  const onRemoveLogo = () => {
     setField('logoUrl', '');
   };
 
   const [selectedShape, setSelectedShape] = useState(null);
-  const [isDraggingElement, setIsDraggingElement] = useState(false);
   const trRef = useRef();
   const layerRef = useRef();
 
@@ -896,13 +899,10 @@ function LanyardStage({
   }, [selectedShape]);
 
   const onSelect = (e) => {
-    // Check if the click is on the stage to deselect
     if (e.target === e.target.getStage()) {
       setSelectedShape(null);
       return;
     }
-
-    // Check if the click is on a draggable element
     if (e.target.attrs.draggable) {
       setSelectedShape(e.target);
     } else {
@@ -910,218 +910,228 @@ function LanyardStage({
     }
   };
 
-  return (
-    <div ref={containerRef} className="w-full h-full flex flex-col items-center relative group">
-      {showInspectControls ? (
-        <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
-          <div className="rounded-2xl border border-slate-200/70 bg-white/85 p-2 shadow-lg backdrop-blur-md">
-            <div className="flex items-center gap-2 px-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
-              <Move3D size={12} />
-              Inspect View
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => adjustRotation(0, -12)}
-                className="rounded-xl bg-slate-900 px-3 py-2 text-[10px] font-black text-white transition-all hover:bg-slate-700"
-              >
-                Left
-              </button>
-              <button
-                type="button"
-                onClick={() => adjustRotation(0, 12)}
-                className="rounded-xl bg-slate-900 px-3 py-2 text-[10px] font-black text-white transition-all hover:bg-slate-700"
-              >
-                Right
-              </button>
-              <button
-                type="button"
-                onClick={() => adjustRotation(-10, 0)}
-                className="rounded-xl bg-white px-3 py-2 text-[10px] font-black text-slate-700 transition-all hover:bg-slate-50"
-              >
-                Tilt Up
-              </button>
-              <button
-                type="button"
-                onClick={() => adjustRotation(10, 0)}
-                className="rounded-xl bg-white px-3 py-2 text-[10px] font-black text-slate-700 transition-all hover:bg-slate-50"
-              >
-                Tilt Down
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={resetRotation}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-600 transition-all hover:border-slate-300 hover:text-slate-900"
-            >
-              <Rotate3d size={12} />
-              Reset View
-            </button>
-            <div className="mt-2 flex items-center justify-between border-t border-slate-200 pt-2 px-1">
-              <span className="text-[9px] font-bold text-slate-500 uppercase">Dual-Canvas (3D)</span>
-              <button
-                type="button"
-                onClick={() => setField('dualCanvasMode', !design.dualCanvasMode)}
-                className={`w-8 h-4 rounded-full transition-colors relative ${design.dualCanvasMode ? 'bg-[#5d5fef]' : 'bg-slate-300'}`}
-              >
-                <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${design.dualCanvasMode ? 'left-[18px]' : 'left-0.5'}`} />
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+  const renderSingleLanyard = (geom, isBackView = false) => {
+    const { strapW, CX, TOP_Y, SPREAD, TIP_Y, CRIMP_Y, barPts, leftStrap, rightStrap, connectorPts, leftCL, rightCL } = geom;
 
-      <motion.div
-        drag={!isDraggingElement}
-        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        onDrag={isDraggingElement ? undefined : handleDrag}
-        style={{
-          rotateX: springRotateX,
-          rotateY: springRotateY,
-          perspective: 1000,
-          cursor: isDraggingElement ? 'default' : 'grab'
-        }}
-        whileDrag={{ cursor: 'grabbing' }}
-        className="relative w-full h-full flex justify-center items-center"
-      >
-        <Stage 
-          ref={stageRef} 
-          width={BASE_WIDTH * scale} 
-          height={BASE_HEIGHT * scale} 
-          scaleX={scale} 
-          scaleY={scale} 
-          onClick={onSelect}
-          className="rounded-[32px] overflow-visible"
-        >
-          <Layer ref={layerRef}>
-            <Rect x={0} y={0} width={BASE_WIDTH} height={BASE_HEIGHT} fill="transparent" />
-            <Group y={0}>
-              <DimLine x1={CX - SPREAD - 25} y1={TOP_Y} x2={CX - SPREAD - 25} y2={TOP_Y + strapW} label={design.width || '20mm'} />
-              <Group>
-                <ProStrap 
-                  points={rightStrap} 
-                  color={strapColor} 
-                  strapW={strapW} 
-                  pattern={activePattern} 
-                  patternOpacity={patternOpacity} 
-                  isSelected={selectedZone === 'right'}
-                  onClick={() => {
-                    setSelectedZone('right');
-                  }}
-                />
-                <UnifiedStrapContent 
-                  {...rightCL} 
-                  design={design} 
-                  items={virtualItems} 
-                  logoImg={logoImg} 
-                  strapW={strapW} 
-                  onUpdateText={onUpdateTextBlockText} 
-                  onUpdateLogo={onUpdateLogo} 
-                  onRemoveText={onRemoveTextBlock} 
-                  onRemoveLogo={onRemoveLogo} 
-                  showControls={showControls} 
-                  zone="right" 
-                />
-                <CustomElements3D elements={design.strapElements?.right} strapW={strapW} {...rightCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} isRightStrap={true} dualCanvasMode={design.dualCanvasMode} />
+    const leftItems = getVirtualItemsForZone('left', isBackView);
+    const rightItems = getVirtualItemsForZone('right', isBackView);
+    const centerItems = getVirtualItemsForZone('center', isBackView);
 
-                {/* Top/Center Neck Strap */}
-                <ProStrap 
-                  points={barPts} 
-                  color={strapColor} 
-                  strapW={strapW} 
-                  pattern={activePattern} 
-                  patternOpacity={patternOpacity} 
-                  isSelected={selectedZone === 'center'}
-                  onClick={() => {
-                    setSelectedZone('center');
-                  }}
-                />
-                <UnifiedStrapContent 
-                  x1={CX - SPREAD + 10} 
-                  y1={TOP_Y + strapW/2} 
-                  x2={CX + SPREAD - 10} 
-                  y2={TOP_Y + strapW/2} 
-                  design={design} 
-                  items={virtualItems} 
-                  logoImg={logoImg} 
-                  strapW={strapW} 
-                  onUpdateText={onUpdateTextBlockText} 
-                  onUpdateLogo={onUpdateLogo} 
-                  onRemoveText={onRemoveTextBlock} 
-                  onRemoveLogo={onRemoveLogo} 
-                  showControls={showControls} 
-                  zone="center" 
-                />
-                <CustomElements3D elements={design.strapElements?.center} strapW={strapW} x1={CX - SPREAD + 10} y1={TOP_Y + strapW/2} x2={CX + SPREAD - 10} y2={TOP_Y + strapW/2} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
-
-                {/* Left Strap */}
-                <ProStrap 
-                  points={leftStrap} 
-                  color={strapColor} 
-                  strapW={strapW} 
-                  pattern={activePattern} 
-                  patternOpacity={patternOpacity} 
-                  isSelected={selectedZone === 'left'}
-                  onClick={() => {
-                    setSelectedZone('left');
-                  }}
-                />
-                <UnifiedStrapContent 
-                  {...leftCL} 
-                  design={design} 
-                  items={virtualItems} 
-                  logoImg={logoImg} 
-                  strapW={strapW} 
-                  onUpdateText={onUpdateTextBlockText} 
-                  onUpdateLogo={onUpdateLogo} 
-                  onRemoveText={onRemoveTextBlock} 
-                  onRemoveLogo={onRemoveLogo} 
-                  showControls={showControls} 
-                  zone="left" 
-                />
-                <CustomElements3D elements={design.strapElements?.left} strapW={strapW} {...leftCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
-
-                <CornerFold side="left" ox={CX - SPREAD} oy={TOP_Y} strapW={strapW} color={strapColor} />
-                <CornerFold side="right" ox={CX + SPREAD} oy={TOP_Y} strapW={strapW} color={strapColor} />
-                <ProStrap points={connectorPts} color={strapColor} strapW={strapW} pattern={activePattern} patternOpacity={patternOpacity} />
-                <MetalCrimp x={CX} y={CRIMP_Y} strapW={strapW} />
-
-                {(() => {
-                  const props = { x: CX, y: TIP_Y, strapW };
-                  switch (design.clipType) {
-                    case 'Plastic Hook': return <PlasticHook {...props} />;
-                    case 'Crocodile Clip': return <CrocodileClip {...props} />;
-                    case 'Ski Reel': return <SkiReel {...props} />;
-                    default: return <SwivelHook {...props} />;
-                  }
-                })()}
-                {design.accessories?.includes('Quick Release Buckle') && <SideReleaseBuckle x={CX} y={TIP_Y - 90} strapW={strapW} strapColor={strapColor} />}
-                
-                {showIdCard && (
-                  <CardHolder 
-                    x={CX} 
-                    y={TIP_Y + getClipHeight(design.clipType) - 8}
-                    cardWidth={reviewCardMetrics.width}
-                    cardHeight={reviewCardMetrics.height}
-                    cardScale={reviewCardMetrics.scale}
-                  >
-                    <IdCardPreview isReviewStep={true} forceSide="front" />
-                  </CardHolder>
-                )}
-              </Group>
-            </Group>
-            <Transformer
-              ref={trRef}
-              boundBoxFunc={(oldBox, newBox) => {
-                if (newBox.width < 5 || newBox.height < 5) return oldBox;
-                return newBox;
-              }}
+    return (
+      <Group key={isBackView ? 'back-lanyard' : 'front-lanyard'}>
+        {/* Layer 1: Under-strap (Left on Front, Right on Back) */}
+        {!isBackView ? (
+          <>
+            <ProStrap 
+              points={leftStrap} 
+              color={strapColor} 
+              strapW={strapW} 
+              pattern={activePattern} 
+              patternOpacity={patternOpacity} 
+              isSelected={selectedZone === 'left'}
+              onClick={() => setSelectedZone('left')}
             />
-          </Layer>
-        </Stage>
-      </motion.div>
+            <UnifiedStrapContent 
+              {...leftCL} 
+              design={design} 
+              items={leftItems} 
+              logoImg={logoImg} 
+              strapW={strapW} 
+              onUpdateText={onUpdateTextBlockText} 
+              onUpdateLogo={onUpdateLogo} 
+              onRemoveText={onRemoveTextBlock} 
+              onRemoveLogo={onRemoveLogo} 
+              showControls={showControls} 
+              zone="left" 
+            />
+            <CustomElements3D elements={design.strapElements?.left} strapW={strapW} {...leftCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
+          </>
+        ) : (
+          <>
+            <ProStrap 
+              points={rightStrap} 
+              color={strapColor} 
+              strapW={strapW} 
+              pattern={activePattern} 
+              patternOpacity={patternOpacity} 
+              isSelected={false}
+            />
+            <UnifiedStrapContent 
+              {...rightCL} 
+              design={design} 
+              items={rightItems} 
+              logoImg={logoImg} 
+              strapW={strapW} 
+              onUpdateText={onUpdateTextBlockText} 
+              onUpdateLogo={onUpdateLogo} 
+              onRemoveText={onRemoveTextBlock} 
+              onRemoveLogo={onRemoveLogo} 
+              showControls={false} 
+              zone="right" 
+            />
+            <CustomElements3D elements={design.strapElements?.right} strapW={strapW} {...rightCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} isRightStrap={true} dualCanvasMode={design.dualCanvasMode} />
+          </>
+        )}
+
+        {/* Top/Center Neck Strap */}
+        <ProStrap 
+          points={barPts} 
+          color={strapColor} 
+          strapW={strapW} 
+          pattern={activePattern} 
+          patternOpacity={patternOpacity} 
+          isSelected={selectedZone === 'center' && !isBackView}
+          onClick={() => !isBackView && setSelectedZone('center')}
+        />
+        <UnifiedStrapContent 
+          x1={CX - SPREAD + 10} 
+          y1={TOP_Y + strapW/2} 
+          x2={CX + SPREAD - 10} 
+          y2={TOP_Y + strapW/2} 
+          design={design} 
+          items={centerItems} 
+          logoImg={logoImg} 
+          strapW={strapW} 
+          onUpdateText={onUpdateTextBlockText} 
+          onUpdateLogo={onUpdateLogo} 
+          onRemoveText={onRemoveTextBlock} 
+          onRemoveLogo={onRemoveLogo} 
+          showControls={showControls && !isBackView} 
+          zone="center" 
+        />
+        <CustomElements3D elements={design.strapElements?.center} strapW={strapW} x1={CX - SPREAD + 10} y1={TOP_Y + strapW/2} x2={CX + SPREAD - 10} y2={TOP_Y + strapW/2} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
+
+        {/* Layer 2: Over-strap (Right on Front, Left on Back) - Crosses over at bottom join */}
+        {!isBackView ? (
+          <>
+            <ProStrap 
+              points={rightStrap} 
+              color={strapColor} 
+              strapW={strapW} 
+              pattern={activePattern} 
+              patternOpacity={patternOpacity} 
+              isSelected={selectedZone === 'right'}
+              onClick={() => setSelectedZone('right')}
+            />
+            <UnifiedStrapContent 
+              {...rightCL} 
+              design={design} 
+              items={rightItems} 
+              logoImg={logoImg} 
+              strapW={strapW} 
+              onUpdateText={onUpdateTextBlockText} 
+              onUpdateLogo={onUpdateLogo} 
+              onRemoveText={onRemoveTextBlock} 
+              onRemoveLogo={onRemoveLogo} 
+              showControls={showControls} 
+              zone="right" 
+            />
+            <CustomElements3D elements={design.strapElements?.right} strapW={strapW} {...rightCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} isRightStrap={true} dualCanvasMode={design.dualCanvasMode} />
+          </>
+        ) : (
+          <>
+            <ProStrap 
+              points={leftStrap} 
+              color={strapColor} 
+              strapW={strapW} 
+              pattern={activePattern} 
+              patternOpacity={patternOpacity} 
+              isSelected={false}
+            />
+            <UnifiedStrapContent 
+              {...leftCL} 
+              design={design} 
+              items={leftItems} 
+              logoImg={logoImg} 
+              strapW={strapW} 
+              onUpdateText={onUpdateTextBlockText} 
+              onUpdateLogo={onUpdateLogo} 
+              onRemoveText={onRemoveTextBlock} 
+              onRemoveLogo={onRemoveLogo} 
+              showControls={false} 
+              zone="left" 
+            />
+            <CustomElements3D elements={design.strapElements?.left} strapW={strapW} {...leftCL} width={design.width} clipType={design.clipType} textDirection={design.textDirection} />
+          </>
+        )}
+
+        {/* Fold crease shadow where straps cross at bottom crimp */}
+        <Line 
+          points={[CX - strapW/2, CRIMP_Y - 4, CX + strapW/2, CRIMP_Y + 8]} 
+          stroke="rgba(0,0,0,0.35)" 
+          strokeWidth={1.5} 
+          listening={false} 
+        />
+
+        {/* Corner folds */}
+        <CornerFold side="left" ox={CX - SPREAD} oy={TOP_Y} strapW={strapW} color={strapColor} />
+        <CornerFold side="right" ox={CX + SPREAD} oy={TOP_Y} strapW={strapW} color={strapColor} />
+        <ProStrap points={connectorPts} color={strapColor} strapW={strapW} pattern={activePattern} patternOpacity={patternOpacity} />
+        <MetalCrimp x={CX} y={CRIMP_Y} strapW={strapW} />
+
+        {/* Hardware Clip */}
+        {(() => {
+          const props = { x: CX, y: TIP_Y, strapW };
+          switch (design.clipType) {
+            case 'Plastic Hook': return <PlasticHook {...props} />;
+            case 'Crocodile Clip': return <CrocodileClip {...props} />;
+            case 'Ski Reel': return <SkiReel {...props} />;
+            default: return <SwivelHook {...props} />;
+          }
+        })()}
+        {design.accessories?.includes('Quick Release Buckle') && <SideReleaseBuckle x={CX} y={TIP_Y - 90} strapW={strapW} strapColor={strapColor} />}
+        
+        {showIdCard && !isBackView && (
+          <CardHolder 
+            x={CX} 
+            y={TIP_Y + getClipHeight(design.clipType) - 8}
+            cardWidth={reviewCardMetrics.width}
+            cardHeight={reviewCardMetrics.height}
+            cardScale={reviewCardMetrics.scale}
+          >
+            <IdCardPreview isReviewStep={true} forceSide="front" />
+          </CardHolder>
+        )}
+      </Group>
+    );
+  };
+
+  return (
+    <div ref={containerRef} className="w-full h-full flex flex-col items-center justify-center relative select-none">
+      <Stage 
+        ref={stageRef} 
+        width={STAGE_2D_WIDTH * scale} 
+        height={STAGE_2D_HEIGHT * scale} 
+        scaleX={scale} 
+        scaleY={scale} 
+        onClick={onSelect}
+        className="rounded-[24px] shadow-2xl overflow-hidden"
+      >
+        <Layer ref={layerRef}>
+          {/* Background fill */}
+          <Rect x={0} y={0} width={STAGE_2D_WIDTH} height={STAGE_2D_HEIGHT} fill="transparent" />
+          
+          {/* Dimension ruler line */}
+          <DimLine x1={geomFront.CX - geomFront.SPREAD - 25} y1={geomFront.TOP_Y} x2={geomFront.CX - geomFront.SPREAD - 25} y2={geomFront.TOP_Y + geomFront.strapW} label={design.width || '20mm'} />
+
+          {/* FRONT LANYARD */}
+          {renderSingleLanyard(geomFront, false)}
+
+          {/* BACK LANYARD */}
+          {renderSingleLanyard(geomBack, true)}
+
+          <Transformer
+            ref={trRef}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 5 || newBox.height < 5) return oldBox;
+              return newBox;
+            }}
+          />
+        </Layer>
+      </Stage>
     </div>
   );
 }
 
 export default memo(LanyardStage);
+

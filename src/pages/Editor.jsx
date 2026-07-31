@@ -61,7 +61,7 @@ export default function Editor() {
 
   const canvasModes = projectType === 'lanyard'
     ? [
-        { key: 'strap', label: '3D View' },
+        { key: 'strap', label: '2D View' },
         { key: 'flat', label: 'Flat Layout' },
         { key: 'hardware', label: 'Clip & Hardware' },
       ]
@@ -177,7 +177,7 @@ export default function Editor() {
         <div className="h-12 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-2">
             <Eye size={14} className="text-slate-400" />
-            <span className="text-[13px] font-semibold text-white">3D Preview</span>
+            <span className="text-[13px] font-semibold text-white">2D Preview</span>
           </div>
           <button
             onClick={() => setPreviewExpanded(false)}
