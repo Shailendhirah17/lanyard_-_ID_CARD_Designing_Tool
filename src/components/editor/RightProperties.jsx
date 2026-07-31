@@ -6,6 +6,7 @@ import {
   SlidersHorizontal, LayoutGrid
 } from 'lucide-react';
 import AllViewsPanel from './AllViewsPanel';
+import { useConfiguratorStore } from '../../store/useConfiguratorStore';
 
 // --- Slider Control ---
 function Slider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
@@ -106,6 +107,8 @@ export default function RightProperties({
   const [tab, setTab] = useState('properties'); // 'properties' | 'layers' | 'history' | 'views'
   const [activeView, setActiveView] = useState('full-3d');
 
+  const design = useConfiguratorStore(s => s.design);
+  const setField = useConfiguratorStore(s => s.setField);
   const el = selectedElement;
 
   return (
@@ -143,29 +146,35 @@ export default function RightProperties({
 
               {projectType === 'lanyard' ? (
                 <div className="space-y-3">
-                  <Section label="Lanyard Strap">
+                  <Section label="Lanyard Strap Text">
                     <div>
                       <label className="text-[10px] font-medium text-slate-400 block mb-1">Left Strap Text</label>
                       <input
                         type="text"
-                        placeholder="Company Name"
+                        value={design.customTextLeft || ''}
+                        placeholder="e.g. RAVENCLAW"
                         className="w-full text-[11px] border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                        onChange={e => {
-                          const setField = useConfiguratorStore.getState().setField;
-                          setField('customTextLeft', e.target.value);
-                        }}
+                        onChange={e => setField('customTextLeft', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-medium text-slate-400 block mb-1">Right Strap Text</label>
+                      <input
+                        type="text"
+                        value={design.customTextRight || ''}
+                        placeholder="e.g. UNIVERSITY"
+                        className="w-full text-[11px] border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        onChange={e => setField('customTextRight', e.target.value)}
                       />
                     </div>
                     <div>
                       <label className="text-[10px] font-medium text-slate-400 block mb-1">Center Text / Role</label>
                       <input
                         type="text"
-                        placeholder="STAFF / VIP"
+                        value={design.customTextCenter || ''}
+                        placeholder="e.g. STAFF / VIP"
                         className="w-full text-[11px] border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                        onChange={e => {
-                          const setField = useConfiguratorStore.getState().setField;
-                          setField('customTextCenter', e.target.value);
-                        }}
+                        onChange={e => setField('customTextCenter', e.target.value)}
                       />
                     </div>
                   </Section>

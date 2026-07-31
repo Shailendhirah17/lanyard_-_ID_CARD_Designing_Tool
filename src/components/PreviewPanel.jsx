@@ -187,9 +187,9 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => useConfiguratorStore.getState().triggerViewReset()}
+            onClick={() => { setZoom(1); useConfiguratorStore.getState().triggerViewReset(); }}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
-            title="Reset 3D View"
+            title="Reset View"
           >
             <RotateCcw size={15} />
           </button>
