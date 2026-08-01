@@ -224,7 +224,11 @@ export default function NewProject({ onStart }) {
       } else if (selectedMode === 'import') {
         navigate('/bulk-import');
       } else {
-        navigate('/editor');
+        if (selectedType === 'id-card') {
+          navigate('/id-card-designer');
+        } else {
+          navigate('/editor');
+        }
       }
     }
   }

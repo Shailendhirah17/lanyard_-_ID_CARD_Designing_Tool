@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LeftSidebar from '../components/id-card-designer/LeftSidebar';
 import CenterWorkspace from '../components/id-card-designer/CenterWorkspace';
@@ -60,7 +60,7 @@ export default function IdCardDesigner() {
     }
   }, [activeProject]);
 
-  const handleSave = (updates) => {
+  const handleSave = useCallback((updates) => {
     if (updates && updates.name) {
       if (updateActiveProject) {
         updateActiveProject(updates);
@@ -88,7 +88,20 @@ export default function IdCardDesigner() {
       setIsSaving(false);
       showToast('Draft saved successfully!', 'success');
     }, 500);
-  };
+  }, [activeProject, saveProject, updateActiveProject]);
+
+  // ⌨️ Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (!ctrl) return;
+      if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.key === 'y') || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+      if (e.key === 's') { e.preventDefault(); handleSave(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo, handleSave]);
 
   const handleExport = async (format) => {
     try {

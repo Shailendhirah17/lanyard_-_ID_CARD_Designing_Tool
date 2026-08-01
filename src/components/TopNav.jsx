@@ -23,7 +23,7 @@ export default function TopNav({ user, onLogout, isAdmin }) {
   const location = useLocation();
 
   // Hide entirely in editor mode
-  if (location.pathname === '/editor') return null;
+  if (location.pathname === '/editor' || location.pathname === '/id-card-designer') return null;
 
   useEffect(() => {
     const handler = (e) => {
