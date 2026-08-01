@@ -102,7 +102,7 @@ export default function IdCardDesigner() {
       }
 
       // 1. Capture current active side
-      const activeDataUrl = stage.toDataURL({ pixelRatio: 1.2 });
+      const activeDataUrl = stage.toDataURL({ pixelRatio: 4.0 });
       const frontDataUrl = currentSide === 'front' ? activeDataUrl : null;
       const backDataUrl = currentSide === 'back' ? activeDataUrl : null;
 
@@ -113,7 +113,7 @@ export default function IdCardDesigner() {
       // Wait a brief tick for render
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      const otherDataUrl = stage.toDataURL({ pixelRatio: 1.2 });
+      const otherDataUrl = stage.toDataURL({ pixelRatio: 4.0 });
       const finalFront = currentSide === 'front' ? frontDataUrl : otherDataUrl;
       const finalBack = currentSide === 'back' ? backDataUrl : otherDataUrl;
 

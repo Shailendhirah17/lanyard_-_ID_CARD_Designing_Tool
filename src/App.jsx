@@ -186,8 +186,8 @@ export default function App() {
         return;
       }
 
-      const previewImage      = stageRef.current?.toDataURL({ pixelRatio: 1.2 }) || '';
-      const idCardPreviewImage = idCardStageRef.current?.toDataURL({ pixelRatio: 1.2 }) || '';
+      const previewImage      = stageRef.current?.toDataURL({ pixelRatio: 4.0 }) || '';
+      const idCardPreviewImage = idCardStageRef.current?.toDataURL({ pixelRatio: 4.0 }) || '';
 
       let logoUrl         = design.logoUrl;
       let customPatternUrl = design.customPatternUrl;
