@@ -126,8 +126,34 @@ export default function Templates() {
         updateActiveProject({ type: 'combo' });
       }
 
+      if (activeProject && activeProject.type === 'id-card') {
+        const frontElements = template.front?.elements?.map(el => ({ ...el, id: `${el.id}-${Date.now()}` })) || [];
+        const backElements = template.back?.elements?.map(el => ({ ...el, id: `${el.id}-${Date.now()}` })) || [];
+        const cardSettings = {
+          width: 54,
+          height: 86,
+          orientation: template.orientation || 'portrait',
+          background: template.front?.backgroundColor || '#ffffff',
+          material: 'PVC',
+          borderThickness: 3,
+          borderColor: '#4f46e5',
+          roundedCorners: 12,
+          frameStyle: 'corporate',
+          slotType: 'oval',
+          slotColor: '#cbd5e1',
+        };
+        updateActiveProject({
+          design: {
+            frontElements,
+            backElements,
+            cardSettings
+          }
+        });
+      }
+
+      const targetRoute = activeProject?.type === 'id-card' ? '/id-card-designer' : '/editor';
       showToast(`"${template.name}" applied! Opening Design Editor…`, 'success');
-      setTimeout(() => navigate('/editor'), 600);
+      setTimeout(() => navigate(targetRoute), 600);
     } catch {
       showToast('Could not apply template', 'error');
     }
