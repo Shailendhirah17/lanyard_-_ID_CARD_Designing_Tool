@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ShoppingBag, Package, Truck, CheckCircle, RefreshCcw, Search, User, MapPin, X, Eye, Info, CreditCard, Palette, Clock, Mail, Phone, Globe, ShieldCheck, Trash2, ExternalLink } from 'lucide-react';
 import { showToast } from '../components/Toast';
 import { formatCurrency } from '../lib/pricing';
@@ -27,6 +27,61 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
+
+  // Zoom & Pan Lightbox States
+  const [zoomImage, setZoomImage] = useState(null);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomOffset, setZoomOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const imageContainerRef = useRef(null);
+
+  // Wheel zoom handler
+  useEffect(() => {
+    const container = imageContainerRef.current;
+    if (!container) return;
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      const zoomFactor = 1.15;
+      const newScale = e.deltaY < 0 ? zoomScale * zoomFactor : zoomScale / zoomFactor;
+      setZoomScale(Math.max(0.5, Math.min(8, newScale)));
+    };
+
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onWheel);
+    };
+  }, [zoomImage, zoomScale]);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - zoomOffset.x, y: e.clientY - zoomOffset.y });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setZoomOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const resetZoom = () => {
+    setZoomScale(1);
+    setZoomOffset({ x: 0, y: 0 });
+  };
+
+  const closeZoom = () => {
+    setZoomImage(null);
+    resetZoom();
+  };
 
   useEffect(() => {
     // Load orders from localStorage
@@ -299,7 +354,7 @@ export default function AdminDashboard() {
                     </span>
                   </div>
                   {selectedOrder.previewImage && selectedOrder.previewImage !== 'Preview too large for storage' ? (
-                    <div className="relative group">
+                    <div className="relative group cursor-zoom-in" onClick={() => setZoomImage(selectedOrder.previewImage)}>
                       <img 
                         src={selectedOrder.previewImage} 
                         alt="Lanyard Design" 
@@ -325,7 +380,7 @@ export default function AdminDashboard() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       {selectedOrder.flatFrontPreview && (
-                        <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center gap-2 cursor-zoom-in" onClick={() => setZoomImage(selectedOrder.flatFrontPreview)}>
                           <img 
                             src={selectedOrder.flatFrontPreview} 
                             alt="Flat Front Preview" 
@@ -335,7 +390,7 @@ export default function AdminDashboard() {
                         </div>
                       )}
                       {selectedOrder.flatBackPreview && (
-                        <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center gap-2 cursor-zoom-in" onClick={() => setZoomImage(selectedOrder.flatBackPreview)}>
                           <img 
                             src={selectedOrder.flatBackPreview} 
                             alt="Flat Back Preview" 
@@ -356,7 +411,7 @@ export default function AdminDashboard() {
                         <CreditCard size={14} /> ID Card Design
                       </span>
                     </div>
-                    <div className="relative group max-w-[280px] mx-auto">
+                    <div className="relative group max-w-[280px] mx-auto cursor-zoom-in" onClick={() => setZoomImage(selectedOrder.idCardPreview)}>
                       <img 
                         src={selectedOrder.idCardPreview} 
                         alt="ID Card Preview" 
@@ -374,25 +429,25 @@ export default function AdminDashboard() {
                     </h4>
                     <div className="flex flex-wrap gap-4 bg-white/50 p-4 rounded-3xl border border-slate-200/60">
                       {selectedOrder.design?.logoUrl && selectedOrder.design?.logoUrl !== 'Stored locally' && (
-                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0 cursor-zoom-in" onClick={() => setZoomImage(selectedOrder.design.logoUrl)}>
                           <img src={selectedOrder.design.logoUrl} alt="Lanyard Logo" className="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border" />
                           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Logo File</span>
                         </div>
                       )}
                       {selectedOrder.design?.customPatternUrl && selectedOrder.design?.customPatternUrl !== 'Stored locally' && (
-                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0 cursor-zoom-in" onClick={() => setZoomImage(selectedOrder.design.customPatternUrl)}>
                           <img src={selectedOrder.design.customPatternUrl} alt="Custom Pattern" className="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border" />
                           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pattern File</span>
                         </div>
                       )}
                       {selectedOrder.design?.idCardPhotoUrl && selectedOrder.design?.idCardPhotoUrl !== 'Stored locally' && (
-                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0 cursor-zoom-in" onClick={() => setZoomImage(selectedOrder.design.idCardPhotoUrl)}>
                           <img src={selectedOrder.design.idCardPhotoUrl} alt="ID Photo" className="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border" />
                           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">ID Photo</span>
                         </div>
                       )}
                       {selectedOrder.design?.idCardLogoUrl && selectedOrder.design?.idCardLogoUrl !== 'Stored locally' && (
-                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0 cursor-zoom-in" onClick={() => setZoomImage(selectedOrder.design.idCardLogoUrl)}>
                           <img src={selectedOrder.design.idCardLogoUrl} alt="ID Logo" className="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border" />
                           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">ID Logo</span>
                         </div>
@@ -672,6 +727,66 @@ export default function AdminDashboard() {
       {/* Shared Invoice Modal */}
       {showInvoice && selectedOrder && (
         <InvoiceModal order={selectedOrder} onClose={() => setShowInvoice(false)} />
+      )}
+
+      {/* Lightbox / Zoom & Pan Modal */}
+      {zoomImage && (
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/85 backdrop-blur-sm animate-fade-in">
+          {/* Controls bar */}
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 z-[210]">
+            <button 
+              onClick={() => setZoomScale(s => Math.max(0.5, s - 0.25))}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors font-bold"
+              title="Zoom Out"
+            >
+              －
+            </button>
+            <span className="text-white text-xs font-mono min-w-[50px] text-center">
+              {Math.round(zoomScale * 100)}%
+            </span>
+            <button 
+              onClick={() => setZoomScale(s => Math.min(8, s + 0.25))}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors font-bold"
+              title="Zoom In"
+            >
+              ＋
+            </button>
+            <div className="w-px h-4 bg-white/20" />
+            <button 
+              onClick={resetZoom}
+              className="text-[10px] uppercase tracking-widest font-black text-white hover:text-indigo-300 transition-colors px-2 py-1"
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Close button */}
+          <button 
+            onClick={closeZoom}
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 border border-white/20 transition-all z-[210]"
+          >
+            <X size={20} />
+          </button>
+
+          {/* Main viewport */}
+          <div 
+            ref={imageContainerRef}
+            className="w-full h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing select-none"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <img
+              src={zoomImage}
+              alt="Zoomed preview"
+              className="max-w-[90%] max-h-[85%] object-contain pointer-events-none transition-transform duration-75 ease-out"
+              style={{
+                transform: `translate(${zoomOffset.x}px, ${zoomOffset.y}px) scale(${zoomScale})`,
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
