@@ -62,6 +62,70 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
   const baseCardW = cardW;
   const baseCardH = cardH;
 
+  // Canvas Pan & Cursor Pointer Zoom
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isCanvasDragging, setIsCanvasDragging] = useState(false);
+  const canvasDragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left - rect.width / 2;
+      const mouseY = e.clientY - rect.top - rect.height / 2;
+
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      const minZoom = 0.25;
+      const maxZoom = 4.0;
+
+      setZoom((prevZoom) => {
+        const newZoom = Math.min(Math.max(minZoom, prevZoom * zoomFactor), maxZoom);
+        if (newZoom === prevZoom) return prevZoom;
+
+        const scaleRatio = newZoom / prevZoom;
+        setPan((prevPan) => ({
+          x: mouseX - (mouseX - prevPan.x) * scaleRatio,
+          y: mouseY - (mouseY - prevPan.y) * scaleRatio,
+        }));
+
+        return newZoom;
+      });
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [setZoom]);
+
+  const handleCanvasPointerDown = (e) => {
+    if (e.button === 0 || e.button === 1) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA') return;
+      setIsCanvasDragging(true);
+      canvasDragStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        px: pan.x,
+        py: pan.y,
+      };
+    }
+  };
+
+  const handleCanvasPointerMove = (e) => {
+    if (!isCanvasDragging) return;
+    const dx = e.clientX - canvasDragStart.current.x;
+    const dy = e.clientY - canvasDragStart.current.y;
+    setPan({
+      x: canvasDragStart.current.px + dx,
+      y: canvasDragStart.current.py + dy,
+    });
+  };
+
+  const handleCanvasPointerUp = () => {
+    setIsCanvasDragging(false);
+  };
+
   // Expanded View zoom and pan
   const [fullZoom, setFullZoom] = useState(1);
   const [fullPan, setFullPan] = useState({ x: 0, y: 0 });
@@ -70,9 +134,20 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
 
   const handleFullWheel = (e) => {
     e.stopPropagation();
-    const scaleBy = 1.05;
-    const newZoom = e.deltaY > 0 ? fullZoom / scaleBy : fullZoom * scaleBy;
-    setFullZoom(Math.min(Math.max(0.2, newZoom), 5));
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left - rect.width / 2;
+    const mouseY = e.clientY - rect.top - rect.height / 2;
+
+    const scaleBy = 1.08;
+    const newZoom = Math.min(Math.max(0.2, e.deltaY < 0 ? fullZoom * scaleBy : fullZoom / scaleBy), 5);
+    if (newZoom === fullZoom) return;
+
+    const scaleRatio = newZoom / fullZoom;
+    setFullPan({
+      x: mouseX - (mouseX - fullPan.x) * scaleRatio,
+      y: mouseY - (mouseY - fullPan.y) * scaleRatio,
+    });
+    setFullZoom(newZoom);
   };
 
   const handleFullPointerDown = (e) => {
@@ -187,7 +262,7 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => { setZoom(1); useConfiguratorStore.getState().triggerViewReset(); }}
+            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); useConfiguratorStore.getState().triggerViewReset(); }}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
             title="Reset View"
           >
@@ -233,10 +308,19 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
       {/* Main 3D Canvas Viewport — Full Height */}
       <div 
         ref={containerRef}
-        className="flex-1 w-full relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
+        className="flex-1 w-full relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 cursor-grab active:cursor-grabbing"
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handleCanvasPointerMove}
+        onPointerUp={handleCanvasPointerUp}
+        onPointerLeave={handleCanvasPointerUp}
       >
         <ThreeDBackground className="w-full h-full">
-          <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div 
+            className="absolute inset-0 flex items-center justify-center z-10 transition-transform duration-75 ease-out origin-center"
+            style={{
+              transform: `translate3d(${pan.x}px, ${pan.y}px, 0px)`
+            }}
+          >
             {activePreviewTab === 'student' ? (
               <div className="relative z-10 w-full h-full flex items-center justify-center p-4 overflow-y-auto">
                 <StudentWearPreview lanyardColor={design.lanyardColor} idCardSize={design.idCard.size} />

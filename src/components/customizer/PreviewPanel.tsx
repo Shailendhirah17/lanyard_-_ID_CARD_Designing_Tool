@@ -40,6 +40,73 @@ export default function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, 
   const baseCardW = cardW;
   const baseCardH = cardH;
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Canvas Pan & Cursor Pointer Zoom
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isCanvasDragging, setIsCanvasDragging] = useState(false);
+  const canvasDragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left - rect.width / 2;
+      const mouseY = e.clientY - rect.top - rect.height / 2;
+
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      const minZoom = 0.25;
+      const maxZoom = 4.0;
+
+      setZoom(prevZoom => {
+        const newZoom = Math.min(Math.max(minZoom, prevZoom * zoomFactor), maxZoom);
+        if (newZoom === prevZoom) return prevZoom;
+
+        const scaleRatio = newZoom / prevZoom;
+        setPan(prevPan => ({
+          x: mouseX - (mouseX - prevPan.x) * scaleRatio,
+          y: mouseY - (mouseY - prevPan.y) * scaleRatio,
+        }));
+
+        return newZoom;
+      });
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [setZoom]);
+
+  const handleCanvasPointerDown = (e: React.PointerEvent) => {
+    if (e.button === 0 || e.button === 1) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.tagName === 'TEXTAREA') return;
+      setIsCanvasDragging(true);
+      canvasDragStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        px: pan.x,
+        py: pan.y,
+      };
+    }
+  };
+
+  const handleCanvasPointerMove = (e: React.PointerEvent) => {
+    if (!isCanvasDragging) return;
+    const dx = e.clientX - canvasDragStart.current.x;
+    const dy = e.clientY - canvasDragStart.current.y;
+    setPan({
+      x: canvasDragStart.current.px + dx,
+      y: canvasDragStart.current.py + dy,
+    });
+  };
+
+  const handleCanvasPointerUp = () => {
+    setIsCanvasDragging(false);
+  };
+
   // Expanded View zoom and pan
   const [fullZoom, setFullZoom] = useState(1);
   const [fullPan, setFullPan] = useState({ x: 0, y: 0 });
@@ -48,9 +115,20 @@ export default function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, 
 
   const handleFullWheel = (e: React.WheelEvent) => {
     e.stopPropagation();
-    const scaleBy = 1.05;
-    const newZoom = e.deltaY > 0 ? fullZoom / scaleBy : fullZoom * scaleBy;
-    setFullZoom(Math.min(Math.max(0.2, newZoom), 5));
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left - rect.width / 2;
+    const mouseY = e.clientY - rect.top - rect.height / 2;
+
+    const scaleBy = 1.08;
+    const newZoom = Math.min(Math.max(0.2, e.deltaY < 0 ? fullZoom * scaleBy : fullZoom / scaleBy), 5);
+    if (newZoom === fullZoom) return;
+
+    const scaleRatio = newZoom / fullZoom;
+    setFullPan({
+      x: mouseX - (mouseX - fullPan.x) * scaleRatio,
+      y: mouseY - (mouseY - fullPan.y) * scaleRatio,
+    });
+    setFullZoom(newZoom);
   };
 
   const handleFullPointerDown = (e: React.PointerEvent) => {
@@ -172,7 +250,12 @@ export default function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, 
       <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
       
       <div 
-        className={`h-[700px] w-full rounded-[32px] bg-[#ffffff] relative overflow-hidden shrink-0 border border-[#eef2f6] shadow-sm select-none ${isMappingStep ? 'ring-2 ring-transparent transition-all' : ''}`}
+        ref={containerRef}
+        className={`h-[700px] w-full rounded-[32px] bg-[#ffffff] relative overflow-hidden shrink-0 border border-[#eef2f6] shadow-sm select-none cursor-grab active:cursor-grabbing ${isMappingStep ? 'ring-2 ring-transparent transition-all' : ''}`}
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handleCanvasPointerMove}
+        onPointerUp={handleCanvasPointerUp}
+        onPointerLeave={handleCanvasPointerUp}
         onDragOver={(e) => {
           if (!isMappingStep) return;
           e.preventDefault();
@@ -222,7 +305,7 @@ export default function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, 
           }
         }}
       >
-        <div className={`absolute inset-0 flex items-center justify-center z-0 transition-all duration-500 ${isBlurred ? 'blur-sm grayscale opacity-50' : ''}`}>
+        <div className={`absolute inset-0 flex items-center justify-center z-0 transition-transform duration-75 ease-out origin-center ${isBlurred ? 'blur-sm grayscale opacity-50' : ''}`} style={{ transform: `translate3d(${pan.x}px, ${pan.y}px, 0px)` }}>
           <div className="relative z-10" style={{ width: 800, height: 700 }}>
             <div className="absolute inset-0 z-40 bg-transparent pointer-events-none" onContextMenu={(e) => e.preventDefault()} />
             <Stage width={800} height={700} scaleX={zoom} scaleY={zoom} ref={idCardStageRef}>
