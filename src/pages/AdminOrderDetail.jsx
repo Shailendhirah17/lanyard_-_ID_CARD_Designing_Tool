@@ -4,7 +4,7 @@ import {
   ArrowLeft, ShieldCheck, DollarSign, ShoppingBag, Clock, User, 
   MapPin, Phone, Mail, FileSpreadsheet, Package, Truck, CheckCircle2, 
   Trash2, Download, Eye, Palette, CreditCard, ExternalLink, ZoomIn, 
-  ZoomOut, Maximize2, X, Clipboard, Check, Layers, Code, Settings
+  ZoomOut, Maximize2, X, Clipboard, Check, Layers, Code, Settings, RefreshCcw
 } from 'lucide-react';
 import { showToast } from '../components/Toast';
 import { formatCurrency } from '../lib/pricing';
