@@ -25,6 +25,7 @@ export default function EditorTopBar({
   onRedo,
   saveState = 'saved',
   isSaving = false,
+  onOrder,
 }) {
   const navigate = useNavigate();
   const [nameEditing, setNameEditing] = useState(false);
@@ -186,11 +187,11 @@ export default function EditorTopBar({
       <div className="relative" ref={exportRef}>
         <button
           onClick={() => setExportOpen(v => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[12px] font-semibold transition-all shadow-sm"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
         >
           <Download size={13} />
           <span>Export</span>
-          <ChevronDown size={11} className="text-indigo-200" />
+          <ChevronDown size={11} className="text-slate-400" />
         </button>
         {exportOpen && (
           <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-50">
@@ -214,21 +215,18 @@ export default function EditorTopBar({
                 {highlight && <span className="ml-auto text-[9px] font-bold bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full uppercase shrink-0">Best</span>}
               </button>
             ))}
-            <div className="border-t border-slate-100 mt-1 pt-1">
-              <button
-                onClick={() => { setExportOpen(false); onNavigate?.('ExportFlow'); }}
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 text-left"
-              >
-                <Package size={13} className="text-slate-400 shrink-0" />
-                <div>
-                  <p className="text-[12px] font-semibold text-slate-800">Order & Print</p>
-                  <p className="text-[10px] text-slate-400">Place a production order</p>
-                </div>
-              </button>
-            </div>
           </div>
         )}
       </div>
+
+      {/* Order & Print button replacing main Export */}
+      <button
+        onClick={() => { if (onOrder) onOrder(); else navigate('/export'); }}
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[12px] font-semibold transition-all shadow-sm"
+      >
+        <Package size={13} className="text-white" />
+        <span>Order & Print</span>
+      </button>
     </div>
   );
 }

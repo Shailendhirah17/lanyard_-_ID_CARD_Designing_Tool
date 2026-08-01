@@ -219,6 +219,7 @@ export default function Editor() {
         onSave={handleSave}
         onPreview={handlePreview}
         onExport={handleExport}
+        onOrder={() => navigate('/export')}
         saveState={saveState}
         isSaving={isSaving}
       />
