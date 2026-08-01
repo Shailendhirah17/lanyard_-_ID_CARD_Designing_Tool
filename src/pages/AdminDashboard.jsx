@@ -473,6 +473,76 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     ) : null}
+
+                    {/* Detailed Lanyard Text Blocks */}
+                    {selectedOrder.design?.textBlocks?.length > 0 && selectedOrder.design.textBlocks.some(b => b.text) ? (
+                      <div className="col-span-2 pt-2 space-y-2 border-t border-[#eef2f6]">
+                        <span className="text-xs font-black text-[#5d5fef] uppercase tracking-widest">Lanyard Text Blocks Details</span>
+                        <div className="bg-[#f8faff] p-4 rounded-2xl border border-[#eef2f6] text-xs text-slate-700 space-y-2">
+                          {selectedOrder.design.textBlocks.map((block, idx) => (
+                            block.text ? (
+                              <div key={block.id || idx} className="border-b border-slate-100 pb-2 last:border-b-0 last:pb-0">
+                                <div className="flex justify-between font-bold text-slate-800">
+                                  <span>Text Block {idx + 1}:</span>
+                                  <span className="text-[10px] text-slate-400 font-normal">({block.fontFamily || 'Montserrat'}, {block.textColor || '#000'})</span>
+                                </div>
+                                <div className="pl-3 mt-1 text-slate-600 font-mono text-[11px]">
+                                  <p>Line 1: "{block.text}"</p>
+                                  {block.textLine2 && <p>Line 2: "{block.textLine2}"</p>}
+                                  {block.textLine3 && <p>Line 3: "{block.textLine3}"</p>}
+                                </div>
+                              </div>
+                            ) : null
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Detailed ID Card Elements */}
+                    {(selectedOrder.design?.idCard?.front?.elements || selectedOrder.design?.idCard?.back?.elements) ? (
+                      <div className="col-span-2 pt-2 space-y-2 border-t border-[#eef2f6]">
+                        <span className="text-xs font-black text-[#5d5fef] uppercase tracking-widest">ID Card Elements Details</span>
+                        <div className="bg-[#f8faff] p-4 rounded-2xl border border-[#eef2f6] text-xs text-slate-700 space-y-3">
+                          {/* Front Side Elements */}
+                          {(() => {
+                            const frontEls = selectedOrder.design?.idCard?.front?.elements || [];
+                            const textEls = frontEls.filter(el => el.type === 'text' && el.content);
+                            if (textEls.length === 0) return null;
+                            return (
+                              <div>
+                                <p className="font-bold text-slate-800 uppercase text-[10px] tracking-wider mb-1">Front Side Text Layers:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-2 text-slate-600 font-mono text-[11px]">
+                                  {textEls.map((el, i) => (
+                                    <li key={el.id || i}>
+                                      <span className="font-bold text-slate-700 font-sans">{el.name || 'Text'}:</span> "{el.content}"
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Back Side Elements */}
+                          {(() => {
+                            const backEls = selectedOrder.design?.idCard?.back?.elements || [];
+                            const textEls = backEls.filter(el => el.type === 'text' && el.content);
+                            if (textEls.length === 0) return null;
+                            return (
+                              <div className="pt-2 border-t border-slate-100">
+                                <p className="font-bold text-slate-800 uppercase text-[10px] tracking-wider mb-1">Back Side Text Layers:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-2 text-slate-600 font-mono text-[11px]">
+                                  {textEls.map((el, i) => (
+                                    <li key={el.id || i}>
+                                      <span className="font-bold text-slate-700 font-sans">{el.name || 'Text'}:</span> "{el.content}"
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>

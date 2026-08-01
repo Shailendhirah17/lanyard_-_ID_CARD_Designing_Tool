@@ -602,6 +602,7 @@ export default function ExportFlow({ project, pricing, user }) {
       flatFrontPreview: flatFrontPreview.length > 500000 ? '' : flatFrontPreview,
       flatBackPreview: flatBackPreview.length > 500000 ? '' : flatBackPreview,
       design: {
+        ...design,
         printingMethod: design?.printingMethod,
         lanyardStyle: design?.lanyardStyle,
         width: design?.width,
