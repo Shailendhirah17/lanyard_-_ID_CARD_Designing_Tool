@@ -3,10 +3,12 @@ import {
   Move, RotateCcw, Maximize2, Layers, Clock, Trash2, Lock, Eye, EyeOff,
   ChevronDown, ChevronRight, Minus, Plus, Bold, Italic, Underline,
   AlignLeft, AlignCenter, AlignRight, Copy, Clipboard, X, GripVertical,
-  SlidersHorizontal, LayoutGrid
+  SlidersHorizontal, LayoutGrid, Palette, Type, RotateCw, ZoomIn, ZoomOut,
+  ImageIcon, Link, Unlink, RefreshCw
 } from 'lucide-react';
 import AllViewsPanel from './AllViewsPanel';
 import { useConfiguratorStore } from '../../store/useConfiguratorStore';
+import { presetColors, gradientPresets } from '../../data/options';
 
 // --- Slider Control ---
 function Slider({ label, value, min = 0, max = 100, step = 1, unit = '', onChange }) {
@@ -93,9 +95,265 @@ function LayerItem({ layer, selected, onSelect, onToggleVisible, onDelete }) {
   );
 }
 
+const ZONE_TEXT_FIELDS = { left: 'customTextLeft', right: 'customTextRight', center: 'customTextCenter' };
+const ZONE_OFFSET_X = { left: 'textOffsetLeft', right: 'textOffsetRight', center: 'textOffsetCenter' };
+const ZONE_OFFSET_Y = { left: 'textYOffsetLeft', right: 'textYOffsetRight', center: 'textYOffsetCenter' };
+const ZONE_LOGO_X = { left: 'logoOffsetLeft', right: 'logoOffsetRight', center: 'logoOffsetCenter' };
+const ZONE_LOGO_Y = { left: 'logoYOffsetLeft', right: 'logoYOffsetRight', center: 'logoYOffsetCenter' };
+
+const FONT_FAMILIES = [
+  'Montserrat', 'Roboto', 'Open Sans', 'Inter', 'Arial',
+  'Lato', 'Poppins', 'Oswald', 'Raleway', 'Ubuntu', 'Bebas Neue', 'Anton', 'Exo 2',
+];
+
+const ZONE_LABELS = { left: 'Left Strap', center: 'Center Strap', right: 'Right Strap' };
+
+function ColorSwatch({ value, selected, onClick, title }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`w-5 h-5 rounded-full border-2 transition-all hover:scale-110 ${selected ? 'border-indigo-500 scale-110' : 'border-transparent'}`}
+      style={{ background: value }}
+    />
+  );
+}
+
+function LanyardZonePanel({ zone, onZoneSelect }) {
+  const design = useConfiguratorStore(s => s.design);
+  const setField = useConfiguratorStore(s => s.setField);
+  const set = (field, value) => setField(field, value);
+
+  const textField = ZONE_TEXT_FIELDS[zone];
+  const offsetXField = ZONE_OFFSET_X[zone];
+  const offsetYField = ZONE_OFFSET_Y[zone];
+  const logoXField = ZONE_LOGO_X[zone];
+  const logoYField = ZONE_LOGO_Y[zone];
+
+  return (
+    <div className="flex-1 overflow-y-auto panel-scroll">
+      {/* Zone selector */}
+      <div className="px-4 pt-3 pb-2 border-b border-slate-100">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Active Zone</p>
+        <div className="flex gap-1">
+          {['left','center','right'].map(z => (
+            <button
+              key={z}
+              onClick={() => onZoneSelect(z)}
+              className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                zone === z
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
+              }`}
+            >
+              {z.charAt(0).toUpperCase() + z.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Section label="Zone Text">
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">{ZONE_LABELS[zone]}</label>
+          <input
+            type="text"
+            value={design[textField] || ''}
+            onChange={e => set(textField, e.target.value)}
+            placeholder={`e.g. COMPANY NAME`}
+            className="w-full text-[11px] border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          />
+        </div>
+        <Slider label="Text Offset (X)" value={design[offsetXField] || 0} min={-350} max={350} step={1} unit="px"
+          onChange={v => set(offsetXField, v)} />
+        <Slider label="Text Offset (Y)" value={design[offsetYField] || 0} min={-30} max={30} step={0.5} unit="px"
+          onChange={v => set(offsetYField, v)} />
+      </Section>
+
+      <Section label="Typography">
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">Font Family</label>
+          <select
+            value={design.fontFamily || 'Montserrat'}
+            onChange={e => set('fontFamily', e.target.value)}
+            className="w-full text-[11px] border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 bg-white"
+          >
+            {FONT_FAMILIES.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <NumberInput label="Font Size" value={design.fontSize || 16} min={6} max={120} unit="px"
+            onChange={v => set('fontSize', v)} />
+          <NumberInput label="Line Height" value={design.lineHeight || 1.2} min={0.5} max={3} step={0.1}
+            onChange={v => set('lineHeight', v)} />
+        </div>
+        <Slider label="Letter Spacing" value={design.letterSpacing || 0} min={-5} max={40} step={0.5} unit="px"
+          onChange={v => set('letterSpacing', v)} />
+        <div className="flex gap-1">
+          <button
+            onClick={() => set('fontWeight', (design.fontWeight || 'bold') === 'bold' ? 'normal' : 'bold')}
+            className={`flex-1 py-1.5 rounded-lg border transition-all flex items-center justify-center gap-1 ${
+              (design.fontWeight || 'bold') === 'bold' ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'border-slate-200 text-slate-400 hover:border-slate-300'
+            }`}
+          >
+            <Bold size={11} /> <span className="text-[10px] font-medium">Bold</span>
+          </button>
+          <button
+            onClick={() => set('fontStyle', design.fontStyle === 'italic' ? 'normal' : 'italic')}
+            className={`flex-1 py-1.5 rounded-lg border transition-all flex items-center justify-center gap-1 ${
+              design.fontStyle === 'italic' ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'border-slate-200 text-slate-400 hover:border-slate-300'
+            }`}
+          >
+            <Italic size={11} /> <span className="text-[10px] font-medium">Italic</span>
+          </button>
+        </div>
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">Alignment</label>
+          <div className="flex gap-1">
+            {[{icon: AlignLeft, align:'left'},{icon: AlignCenter, align:'center'},{icon: AlignRight, align:'right'}].map(({icon: Icon, align}) => (
+              <button key={align} onClick={() => set('textAlign', align)}
+                className={`flex-1 py-1.5 rounded-lg border transition-all ${
+                  (design.textAlign || 'center') === align ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'border-slate-200 text-slate-400 hover:border-slate-300'
+                }`}>
+                <Icon size={12} className="mx-auto" />
+              </button>
+            ))}
+          </div>
+        </div>
+        <NumberInput label="Text Angle" value={design.textAngle || 0} min={-180} max={180} unit="°"
+          onChange={v => set('textAngle', v)} />
+      </Section>
+
+      <Section label="Text Color &amp; Effects">
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">Font Color</label>
+          <div className="flex items-center gap-2">
+            <input type="color"
+              value={(design.fontColor || design.textColor || '#000000').startsWith('#') ? (design.fontColor || design.textColor || '#000000') : '#000000'}
+              onChange={e => { set('fontColor', e.target.value); set('textColor', e.target.value); }}
+              className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5"
+            />
+            <input type="text"
+              value={design.fontColor || design.textColor || '#000000'}
+              onChange={e => { if(/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)){ set('fontColor', e.target.value); set('textColor', e.target.value); } }}
+              className="flex-1 text-[11px] font-mono border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+          </div>
+          <div className="flex gap-1 mt-2 flex-wrap">
+            {presetColors.map(c => (
+              <ColorSwatch key={c.value} value={c.value} title={c.name}
+                selected={(design.fontColor || design.textColor) === c.value}
+                onClick={() => { set('fontColor', c.value); set('textColor', c.value); }}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">Stroke Color</label>
+          <div className="flex items-center gap-2">
+            <input type="color"
+              value={(design.textStrokeColor || '#000000').startsWith('#') ? (design.textStrokeColor || '#000000') : '#000000'}
+              onChange={e => set('textStrokeColor', e.target.value)}
+              className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5"
+            />
+            <NumberInput label="" value={design.textStrokeWidth || 0} min={0} max={10} step={0.5} unit="px"
+              onChange={v => set('textStrokeWidth', v)} />
+          </div>
+        </div>
+        <Slider label="Shadow Blur" value={design.textShadowBlur || 0} min={0} max={24} step={1} unit="px"
+          onChange={v => set('textShadowBlur', v)} />
+        <Slider label="Text Spacing" value={design.textSpacing || 60} min={20} max={300} step={5} unit="px"
+          onChange={v => set('textSpacing', v)} />
+      </Section>
+
+      <Section label="Strap Color">
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">Solid Color</label>
+          <div className="flex items-center gap-2">
+            <input type="color"
+              value={(design.lanyardColor || '#ffffff').startsWith('#') ? (design.lanyardColor || '#ffffff') : '#ffffff'}
+              onChange={e => set('lanyardColor', e.target.value)}
+              className="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0.5"
+            />
+            <input type="text"
+              value={design.lanyardColor || '#ffffff'}
+              onChange={e => { if(/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) set('lanyardColor', e.target.value); }}
+              className="flex-1 text-[11px] font-mono border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+          </div>
+          <div className="flex gap-1 mt-2 flex-wrap">
+            {presetColors.map(c => (
+              <ColorSwatch key={c.value} value={c.value} title={c.name}
+                selected={design.lanyardColor === c.value}
+                onClick={() => set('lanyardColor', c.value)}
+              />
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">Gradient Presets</label>
+          <div className="grid grid-cols-8 gap-1">
+            {gradientPresets.slice(0, 16).map(g => (
+              <button key={g.name} onClick={() => set('lanyardColor', g.value)}
+                title={g.name}
+                className={`w-6 h-6 rounded-md border-2 transition-all hover:scale-110 ${design.lanyardColor === g.value ? 'border-indigo-500' : 'border-transparent'}`}
+                style={{ background: g.value }}
+              />
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {design.logoUrl && (
+        <Section label="Logo / Image">
+          <Slider label="Logo Scale" value={Math.round((design.logoScale || 1) * 100)} min={10} max={300} step={5} unit="%"
+            onChange={v => set('logoScale', v / 100)} />
+          <NumberInput label="Logo Offset X" value={design[logoXField] || design.logoOffset || 0} min={-200} max={200}
+            onChange={v => set(logoXField, v)} />
+          <NumberInput label="Logo Offset Y" value={design[logoYField] || design.logoYOffset || 0} min={-50} max={50}
+            onChange={v => set(logoYField, v)} />
+          <NumberInput label="Logo Rotation" value={design.logoRotation || 0} min={-180} max={180} unit="°"
+            onChange={v => set('logoRotation', v)} />
+          <button onClick={() => set('logoUrl', '')} className="w-full py-1.5 text-[11px] font-semibold text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-all flex items-center justify-center gap-1.5">
+            <Trash2 size={11} /> Remove Logo
+          </button>
+        </Section>
+      )}
+
+      <Section label="Strap Dimensions" defaultOpen={false}>
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">Width</label>
+          <div className="flex gap-1 flex-wrap">
+            {['12mm','16mm','20mm','25mm'].map(w => (
+              <button key={w} onClick={() => set('width', w)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                  design.width === w ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-500 hover:border-indigo-300'
+                }`}
+              >{w}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] font-medium text-slate-400 block mb-1">Length</label>
+          <div className="flex gap-1 flex-wrap">
+            {['28','30','32','34','38'].map(l => (
+              <button key={l} onClick={() => set('length', l)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                  design.length === l ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-200 text-slate-500 hover:border-indigo-300'
+                }`}
+              >{l}cm</button>
+            ))}
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
 export default function RightProperties({
   projectType = 'lanyard',
   selectedElement,
+  selectedZone,
+  onZoneSelect,
   layers = [],
   history = [],
   onChangeElement,
@@ -136,12 +394,17 @@ export default function RightProperties({
 
       {/* Properties Tab */}
       {tab === 'properties' && (
+        selectedZone && projectType === 'lanyard' ? (
+          <LanyardZonePanel zone={selectedZone} onZoneSelect={onZoneSelect || (() => {})} />
+        ) : (
         <div className="flex-1 overflow-y-auto panel-scroll">
           {!el ? (
             <div className="p-4 space-y-4">
               <div className="text-center py-2">
                 <p className="text-[12px] font-bold text-slate-800 capitalize">{projectType.replace('-', ' ')} Settings</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Global project properties</p>
+                {projectType === 'lanyard' && (
+                  <p className="text-[10px] text-indigo-500 mt-1 font-medium">💡 Click a strap zone to edit it</p>
+                )}
               </div>
 
               {projectType === 'lanyard' ? (
@@ -303,6 +566,7 @@ export default function RightProperties({
             </>
           )}
         </div>
+        )
       )}
 
       {/* Layers Tab */}

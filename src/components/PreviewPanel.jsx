@@ -32,11 +32,13 @@ import IdCardPreview from './IdCardPreview';
 import StudentWearPreview from './StudentWearPreview';
 import ThreeDBackground from './ThreeDBackground';
 import { Group, Layer, Stage } from 'react-konva';
+import CanvasEditingToolbar from './editor/CanvasEditingToolbar';
 
-function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, onEditStrap, projectType = 'lanyard' }) {
+function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, onEditStrap, projectType = 'lanyard', onZoneSelect: onZoneSelectProp }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activePreviewTab, setActivePreviewTab] = useState(projectType === 'id-card' ? 'idcard' : 'lanyard'); 
   const [containerSize, setContainerSize] = useState({ width: 800, height: 700 });
+  const [selectedZone, setSelectedZone] = useState(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -62,6 +64,100 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
   const baseCardW = cardW;
   const baseCardH = cardH;
 
+  // Canvas Pan & Cursor Pointer Zoom
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isCanvasDragging, setIsCanvasDragging] = useState(false);
+  const [isSpaceDown, setIsSpaceDown] = useState(false);
+  const canvasDragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const isSpaceRef = useRef(false); // use ref for event handler closure
+
+  // Space key = pan mode (like Figma)
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        isSpaceRef.current = true;
+        setIsSpaceDown(true);
+      }
+    };
+    const onKeyUp = (e) => {
+      if (e.code === 'Space') {
+        isSpaceRef.current = false;
+        setIsSpaceDown(false);
+        setIsCanvasDragging(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left - rect.width / 2;
+      const mouseY = e.clientY - rect.top - rect.height / 2;
+
+      const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+      const minZoom = 0.25;
+      const maxZoom = 4.0;
+
+      setZoom((prevZoom) => {
+        const newZoom = Math.min(Math.max(minZoom, prevZoom * zoomFactor), maxZoom);
+        if (newZoom === prevZoom) return prevZoom;
+
+        const scaleRatio = newZoom / prevZoom;
+        setPan((prevPan) => ({
+          x: mouseX - (mouseX - prevPan.x) * scaleRatio,
+          y: mouseY - (mouseY - prevPan.y) * scaleRatio,
+        }));
+
+        return newZoom;
+      });
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [setZoom]);
+
+  const handleCanvasPointerDown = (e) => {
+    // Only pan with middle-mouse OR Space+left-click
+    // Left-click alone is reserved for Konva element interaction
+    const isMiddleMouse = e.button === 1;
+    const isSpacePan = e.button === 0 && isSpaceRef.current;
+    if (!isMiddleMouse && !isSpacePan) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    setIsCanvasDragging(true);
+    canvasDragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      px: pan.x,
+      py: pan.y,
+    };
+  };
+
+  const handleCanvasPointerMove = (e) => {
+    if (!isCanvasDragging) return;
+    const dx = e.clientX - canvasDragStart.current.x;
+    const dy = e.clientY - canvasDragStart.current.y;
+    setPan({
+      x: canvasDragStart.current.px + dx,
+      y: canvasDragStart.current.py + dy,
+    });
+  };
+
+  const handleCanvasPointerUp = () => {
+    setIsCanvasDragging(false);
+  };
+
   // Expanded View zoom and pan
   const [fullZoom, setFullZoom] = useState(1);
   const [fullPan, setFullPan] = useState({ x: 0, y: 0 });
@@ -70,9 +166,20 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
 
   const handleFullWheel = (e) => {
     e.stopPropagation();
-    const scaleBy = 1.05;
-    const newZoom = e.deltaY > 0 ? fullZoom / scaleBy : fullZoom * scaleBy;
-    setFullZoom(Math.min(Math.max(0.2, newZoom), 5));
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left - rect.width / 2;
+    const mouseY = e.clientY - rect.top - rect.height / 2;
+
+    const scaleBy = 1.08;
+    const newZoom = Math.min(Math.max(0.2, e.deltaY < 0 ? fullZoom * scaleBy : fullZoom / scaleBy), 5);
+    if (newZoom === fullZoom) return;
+
+    const scaleRatio = newZoom / fullZoom;
+    setFullPan({
+      x: mouseX - (mouseX - fullPan.x) * scaleRatio,
+      y: mouseY - (mouseY - fullPan.y) * scaleRatio,
+    });
+    setFullZoom(newZoom);
   };
 
   const handleFullPointerDown = (e) => {
@@ -187,7 +294,7 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => { setZoom(1); useConfiguratorStore.getState().triggerViewReset(); }}
+            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); useConfiguratorStore.getState().triggerViewReset(); }}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
             title="Reset View"
           >
@@ -233,10 +340,21 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
       {/* Main 3D Canvas Viewport — Full Height */}
       <div 
         ref={containerRef}
-        className="flex-1 w-full relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950"
+        className={`flex-1 w-full relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 ${
+          isCanvasDragging ? 'cursor-grabbing' : isSpaceDown ? 'cursor-grab' : 'cursor-default'
+        }`}
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handleCanvasPointerMove}
+        onPointerUp={handleCanvasPointerUp}
+        onPointerLeave={handleCanvasPointerUp}
       >
         <ThreeDBackground className="w-full h-full">
-          <div className="absolute inset-0 flex items-center justify-center z-10">
+          <div 
+            className="absolute inset-0 flex items-center justify-center z-10 transition-transform duration-75 ease-out origin-center"
+            style={{
+              transform: `translate3d(${pan.x}px, ${pan.y}px, 0px)`
+            }}
+          >
             {activePreviewTab === 'student' ? (
               <div className="relative z-10 w-full h-full flex items-center justify-center p-4 overflow-y-auto">
                 <StudentWearPreview lanyardColor={design.lanyardColor} idCardSize={design.idCard.size} />
@@ -299,7 +417,20 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
               </div>
             ) : (
               <div className="relative z-10 w-full h-full flex items-center justify-center">
-                <LanyardStage stageRef={stageRef} zoom={zoom} currentStep={currentStep} onEditStrap={onEditStrap} />
+                <CanvasEditingToolbar
+                  selectedZone={selectedZone}
+                  onZoneSelect={(z) => { setSelectedZone(z); onZoneSelectProp?.(z); }}
+                  onClose={() => setSelectedZone(null)}
+                />
+                <LanyardStage
+                  stageRef={stageRef}
+                  zoom={zoom}
+                  currentStep={currentStep}
+                  onEditStrap={onEditStrap}
+                  alwaysShowControls={true}
+                  onZoneSelect={(z) => { setSelectedZone(z); onZoneSelectProp?.(z); }}
+                  externalSelectedZone={selectedZone}
+                />
               </div>
             )}
           </div>

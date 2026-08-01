@@ -38,6 +38,7 @@ export default function Editor() {
   const [validationVisible, setValidationVisible] = useState(true);
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [selectedElement, setSelectedElement] = useState(null);
+  const [selectedZone, setSelectedZone] = useState(null);
   const [saveState, setSaveState] = useState('saved');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -218,6 +219,7 @@ export default function Editor() {
         onSave={handleSave}
         onPreview={handlePreview}
         onExport={handleExport}
+        onOrder={() => navigate('/export')}
         saveState={saveState}
         isSaving={isSaving}
       />
@@ -302,6 +304,7 @@ export default function Editor() {
                   setZoom={setZoom}
                   currentStep={currentStep}
                   onEditStrap={() => {}}
+                  onZoneSelect={(zone) => setSelectedZone(zone)}
                 />
               </Suspense>
             )}
@@ -332,17 +335,21 @@ export default function Editor() {
         <RightProperties
           projectType={projectType}
           selectedElement={selectedElement}
+          selectedZone={selectedZone}
+          onZoneSelect={(zone) => setSelectedZone(zone)}
           layers={layers}
           history={[]}
           onChangeElement={(updates) => {
             if (!selectedElement) return;
-            const setField = useConfiguratorStore.getState().setField;
-            // Update element in store (simplified — real implementation tracks by ID)
-            console.log('Change element:', updates);
+            const { setField } = useConfiguratorStore.getState();
+            Object.entries(updates).forEach(([key, val]) => {
+              setField(key, val);
+            });
           }}
           onSelectLayer={(id) => {
             const el = layers.find(l => l.id === id);
             setSelectedElement(el || null);
+            setSelectedZone(null);
           }}
           onDeleteLayer={(id) => {
             console.log('Delete layer:', id);

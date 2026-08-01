@@ -65,7 +65,7 @@ const VALIDATION_ITEMS = [
   { label: 'Fonts', detail: 'All embedded', pass: true },
 ];
 
-const STEPS = ['Format', 'Quantity', 'Review', 'Confirm'];
+const STEPS = ['Quantity', 'Review', 'Confirm'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const generateOrderId = () =>
@@ -551,13 +551,12 @@ export default function ExportFlow({ project, pricing, user }) {
   const design = useConfiguratorStore((s) => s.design);
 
   const canProceed = () => {
-    if (step === 1) return !!selectedFormat;
-    if (step === 2) return quantity >= 1 && quantity <= 10000;
+    if (step === 1) return quantity >= 1 && quantity <= 10000;
     return true;
   };
 
   const handleNext = () => {
-    if (step < 4) setStep((s) => s + 1);
+    if (step < 3) setStep((s) => s + 1);
   };
 
   const handleBack = () => {
@@ -678,17 +677,10 @@ export default function ExportFlow({ project, pricing, user }) {
         {/* Step panels */}
         <div>
           {step === 1 && (
-            <FormatStep
-              selected={selectedFormat}
-              onSelect={setSelectedFormat}
-            />
-          )}
-
-          {step === 2 && (
             <QuantityStep quantity={quantity} onChange={setQuantity} />
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <ReviewStep
               project={project}
               format={selectedFormat}
@@ -696,7 +688,7 @@ export default function ExportFlow({ project, pricing, user }) {
             />
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <ConfirmStep
               project={project}
               format={selectedFormat}
@@ -707,8 +699,8 @@ export default function ExportFlow({ project, pricing, user }) {
           )}
         </div>
 
-        {/* Navigation row — hide in success state on step 4 */}
-        {!(step === 4 && successInfo) && (
+        {/* Navigation row — hide in success state on step 3 */}
+        {!(step === 3 && successInfo) && (
           <div className="mt-8 flex justify-between items-center">
             <button
               onClick={handleBack}
@@ -718,13 +710,13 @@ export default function ExportFlow({ project, pricing, user }) {
               {step === 1 ? 'Cancel' : 'Back'}
             </button>
 
-            {step < 4 && (
+            {step < 3 && (
               <button
                 onClick={handleNext}
                 disabled={!canProceed()}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 active:scale-95 transition-all shadow shadow-indigo-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
               >
-                {step === 3 ? 'Proceed to Confirm' : 'Next'}
+                {step === 2 ? 'Proceed to Confirm' : 'Next'}
                 <ArrowRight size={16} />
               </button>
             )}
