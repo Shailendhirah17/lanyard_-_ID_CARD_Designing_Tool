@@ -361,7 +361,8 @@ export default function AdminDashboard() {
             {filteredOrders.map((order) => (
               <div 
                 key={order.id} 
-                className="bg-slate-800/60 border border-slate-700/70 rounded-3xl p-5 hover:border-indigo-500/50 hover:shadow-xl transition-all flex flex-col group"
+                onClick={() => setSelectedOrder(order)}
+                className="bg-slate-800/60 border border-slate-700/70 rounded-3xl p-5 hover:border-indigo-500/50 hover:shadow-xl transition-all flex flex-col group cursor-pointer"
               >
                 {/* Order Top Line */}
                 <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-700/60">
@@ -392,7 +393,7 @@ export default function AdminDashboard() {
                 <div className="bg-slate-900/80 rounded-2xl p-3 border border-slate-800 my-2 flex items-center justify-around gap-2">
                   {/* Lanyard 2D View Thumb */}
                   <div 
-                    onClick={() => order.previewImage && setZoomImage(order.previewImage)}
+                    onClick={(e) => { e.stopPropagation(); if (order.previewImage) setZoomImage(order.previewImage); }}
                     className="flex flex-col items-center gap-1 cursor-pointer group/thumb"
                   >
                     <div className="w-16 h-16 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center p-1 group-hover/thumb:border-indigo-500 transition-colors">
@@ -407,7 +408,7 @@ export default function AdminDashboard() {
 
                   {/* Flat Front Layout Thumb */}
                   <div 
-                    onClick={() => order.flatFrontPreview && setZoomImage(order.flatFrontPreview)}
+                    onClick={(e) => { e.stopPropagation(); if (order.flatFrontPreview) setZoomImage(order.flatFrontPreview); }}
                     className="flex flex-col items-center gap-1 cursor-pointer group/thumb"
                   >
                     <div className="w-16 h-16 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center p-1 group-hover/thumb:border-indigo-500 transition-colors">
@@ -422,7 +423,7 @@ export default function AdminDashboard() {
 
                   {/* ID Card Front Thumb */}
                   <div 
-                    onClick={() => order.idCardPreview && setZoomImage(order.idCardPreview)}
+                    onClick={(e) => { e.stopPropagation(); if (order.idCardPreview) setZoomImage(order.idCardPreview); }}
                     className="flex flex-col items-center gap-1 cursor-pointer group/thumb"
                   >
                     <div className="w-16 h-16 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center p-1 group-hover/thumb:border-indigo-500 transition-colors">
@@ -450,7 +451,8 @@ export default function AdminDashboard() {
                 <div className="pt-3 flex items-center justify-between gap-2 mt-auto">
                   <select
                     value={order.status}
-                    onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => { e.stopPropagation(); updateOrderStatus(order.id, e.target.value); }}
                     className="bg-slate-900 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     {STATUS_OPTIONS.map(st => (
@@ -460,7 +462,7 @@ export default function AdminDashboard() {
 
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => setSelectedOrder(order)}
+                      onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
                       className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-500 text-indigo-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                       title="Inspect Specs & Proofs"
                     >
@@ -469,7 +471,7 @@ export default function AdminDashboard() {
                     </button>
 
                     <button
-                      onClick={() => { setSelectedOrder(order); setShowInvoice(true); }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setShowInvoice(true); }}
                       className="p-1.5 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
                       title="Print Invoice"
                     >
@@ -477,7 +479,7 @@ export default function AdminDashboard() {
                     </button>
 
                     <button
-                      onClick={() => deleteOrder(order.id)}
+                      onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
                       className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white transition-colors cursor-pointer"
                       title="Delete Order"
                     >
@@ -506,7 +508,11 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="divide-y divide-slate-700/60 text-xs text-slate-200 font-medium">
                   {filteredOrders.map(order => (
-                    <tr key={order.id} className="hover:bg-slate-800/90 transition-colors">
+                    <tr 
+                      key={order.id} 
+                      onClick={() => setSelectedOrder(order)}
+                      className="hover:bg-slate-800/90 transition-colors cursor-pointer"
+                    >
                       <td className="px-5 py-4">
                         <span className="font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
                           {order.id}
@@ -526,23 +532,23 @@ export default function AdminDashboard() {
                       <td className="px-5 py-4">
                         <StatusBadge status={order.status} />
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => setSelectedOrder(order)}
+                            onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
                             className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-colors cursor-pointer"
                           >
                             Inspect Specs
                           </button>
                           <button
-                            onClick={() => { setSelectedOrder(order); setShowInvoice(true); }}
+                            onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setShowInvoice(true); }}
                             className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
                             title="Invoice"
                           >
                             <Download size={14} />
                           </button>
                           <button
-                            onClick={() => deleteOrder(order.id)}
+                            onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
                             className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
                             title="Delete"
                           >
