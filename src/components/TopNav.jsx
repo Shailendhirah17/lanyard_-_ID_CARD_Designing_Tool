@@ -36,7 +36,11 @@ export default function TopNav({ user, onLogout, isAdmin }) {
   }, []);
 
   const go = (key) => {
-    navigate(ROUTE_MAP[key] || '/dashboard');
+    let dest = ROUTE_MAP[key] || '/dashboard';
+    if (isAdmin && (key === 'Dashboard' || dest === '/dashboard')) {
+      dest = '/admin';
+    }
+    navigate(dest);
     setMobileOpen(false);
     setUserMenuOpen(false);
   };

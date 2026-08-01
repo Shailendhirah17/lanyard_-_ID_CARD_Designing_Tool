@@ -313,7 +313,7 @@ export default function App() {
             {/* ── Dashboard ── */}
             <Route path="/dashboard" element={
               <RequireAuth user={user}>
-                <Dashboard user={user} />
+                {user?.isAdmin ? <Navigate to="/admin" replace /> : <Dashboard user={user} />}
               </RequireAuth>
             } />
 
