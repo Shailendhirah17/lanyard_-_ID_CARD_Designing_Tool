@@ -273,7 +273,7 @@ export default function App() {
   }
 
   // ── Determine if current route is the editor (hides TopNav) ───
-  const isEditorRoute = location.pathname === '/editor';
+  const isEditorRoute = location.pathname === '/editor' || location.pathname === '/id-card-designer';
 
   return (
     <div className="flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-slate-50">

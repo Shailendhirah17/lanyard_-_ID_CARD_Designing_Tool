@@ -173,7 +173,11 @@ export default function Dashboard({ user }) {
 
   const handleOpenProject = (project) => {
     setActiveProject(project);
-    navigate('/editor');
+    if (project.type === 'id-card') {
+      navigate('/id-card-designer');
+    } else {
+      navigate('/editor');
+    }
   };
 
   const handleNewProject = () => {

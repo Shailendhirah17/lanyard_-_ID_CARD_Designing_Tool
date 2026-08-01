@@ -98,6 +98,20 @@ export const useIdCardDesignerStore = create(
         return state;
       }),
 
+      bringToFront: (id) => set((state) => {
+        const targetSide = state.activeSide === 'front' ? 'frontElements' : 'backElements';
+        const elements = [...state[targetSide]];
+        const index = elements.findIndex((el) => el.id === id);
+        if (index > -1 && index < elements.length - 1) {
+          const el = elements.splice(index, 1)[0];
+          elements.push(el);
+          const newState = { [targetSide]: elements };
+          get().saveHistory(newState);
+          return newState;
+        }
+        return state;
+      }),
+
       sendBackward: (id) => set((state) => {
         const targetSide = state.activeSide === 'front' ? 'frontElements' : 'backElements';
         const elements = [...state[targetSide]];
@@ -106,6 +120,20 @@ export const useIdCardDesignerStore = create(
           const temp = elements[index];
           elements[index] = elements[index - 1];
           elements[index - 1] = temp;
+          const newState = { [targetSide]: elements };
+          get().saveHistory(newState);
+          return newState;
+        }
+        return state;
+      }),
+
+      sendToBack: (id) => set((state) => {
+        const targetSide = state.activeSide === 'front' ? 'frontElements' : 'backElements';
+        const elements = [...state[targetSide]];
+        const index = elements.findIndex((el) => el.id === id);
+        if (index > 0) {
+          const el = elements.splice(index, 1)[0];
+          elements.unshift(el);
           const newState = { [targetSide]: elements };
           get().saveHistory(newState);
           return newState;
