@@ -121,11 +121,6 @@ export default function Templates() {
         setField('lanyardColor', accentColor);
       }
 
-      // Upgrade project to 'combo' set if started as 'lanyard' so the card is visible
-      if (activeProject && activeProject.type === 'lanyard') {
-        updateActiveProject({ type: 'combo' });
-      }
-
       if (activeProject && activeProject.type === 'id-card') {
         const frontElements = template.front?.elements?.map(el => ({ ...el, id: `${el.id}-${Date.now()}` })) || [];
         const backElements = template.back?.elements?.map(el => ({ ...el, id: `${el.id}-${Date.now()}` })) || [];
