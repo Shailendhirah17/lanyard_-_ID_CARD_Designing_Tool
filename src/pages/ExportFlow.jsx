@@ -597,10 +597,10 @@ export default function ExportFlow({ project, pricing, user }) {
       pricePerUnit: unitPrice,
       address: address,
       format: formatLabel(selectedFormat),
-      previewImage: previewImage.length > 500000 ? '' : previewImage,
-      idCardPreview: idCardPreviewImage.length > 500000 ? '' : idCardPreviewImage,
-      flatFrontPreview: flatFrontPreview.length > 500000 ? '' : flatFrontPreview,
-      flatBackPreview: flatBackPreview.length > 500000 ? '' : flatBackPreview,
+      previewImage: previewImage.length > 1500000 ? '' : previewImage,
+      idCardPreview: idCardPreviewImage.length > 1500000 ? '' : idCardPreviewImage,
+      flatFrontPreview: flatFrontPreview.length > 1500000 ? '' : flatFrontPreview,
+      flatBackPreview: flatBackPreview.length > 1500000 ? '' : flatBackPreview,
       design: {
         ...design,
         printingMethod: design?.printingMethod,
@@ -639,7 +639,7 @@ export default function ExportFlow({ project, pricing, user }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        design: { ...design, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 500000 ? '' : previewImage },
+        design: { ...design, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 1500000 ? '' : previewImage },
         order: { quantity, pricePerUnit: unitPrice, totalPriceInInr: total },
       }),
     }).catch(e => console.warn('Backend unavailable, saved locally.', e));

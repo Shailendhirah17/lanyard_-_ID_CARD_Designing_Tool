@@ -184,8 +184,8 @@ export default function App() {
         return;
       }
 
-      const previewImage      = stageRef.current?.toDataURL({ pixelRatio: 0.5 }) || '';
-      const idCardPreviewImage = idCardStageRef.current?.toDataURL({ pixelRatio: 0.5 }) || '';
+      const previewImage      = stageRef.current?.toDataURL({ pixelRatio: 1.2 }) || '';
+      const idCardPreviewImage = idCardStageRef.current?.toDataURL({ pixelRatio: 1.2 }) || '';
 
       let logoUrl         = design.logoUrl;
       let customPatternUrl = design.customPatternUrl;
@@ -219,7 +219,7 @@ export default function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            design: { ...storedDesign, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 500000 ? '' : previewImage },
+            design: { ...storedDesign, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 1500000 ? '' : previewImage },
             order:  { quantity: design.quantity, pricePerUnit: pricing.pricePerUnit, totalPriceInInr: pricing.total },
           }),
         });
@@ -231,8 +231,8 @@ export default function App() {
         userEmail: user?.email || 'guest@test.com', date: new Date().toISOString().split('T')[0],
         status: 'Pending', total: pricing.total, designName: design.idCard.name || 'Custom Lanyard',
         design: storedDesign, quantity: design.quantity, pricePerUnit: pricing.pricePerUnit,
-        previewImage: previewImage.length > 500000 ? '' : previewImage,
-        idCardPreview: idCardPreviewImage.length > 500000 ? '' : idCardPreviewImage,
+        previewImage: previewImage.length > 1500000 ? '' : previewImage,
+        idCardPreview: idCardPreviewImage.length > 1500000 ? '' : idCardPreviewImage,
       };
 
       try {
