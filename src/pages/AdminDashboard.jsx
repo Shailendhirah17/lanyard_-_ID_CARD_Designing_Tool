@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Package, Truck, CheckCircle, RefreshCcw, Search, User, MapPin, X, Eye, Info, CreditCard, Palette, Clock, Mail, Phone, Globe, ShieldCheck, Trash2 } from 'lucide-react';
+import { ShoppingBag, Package, Truck, CheckCircle, RefreshCcw, Search, User, MapPin, X, Eye, Info, CreditCard, Palette, Clock, Mail, Phone, Globe, ShieldCheck, Trash2, ExternalLink } from 'lucide-react';
 import { showToast } from '../components/Toast';
 import { formatCurrency } from '../lib/pricing';
 import InvoiceModal from '../components/InvoiceModal';
@@ -292,10 +292,10 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between px-2">
                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <Palette size={14} /> Lanyard Strap
+                      <Palette size={14} /> Lanyard Strap (2D Hanging View)
                     </span>
                     <span className="text-[10px] font-bold text-[#5d5fef] bg-[#5d5fef]/5 px-3 py-1 rounded-full border border-[#5d5fef]/10">
-                      Sublimated Print
+                      {selectedOrder.design?.printingMethod || 'Sublimated'}
                     </span>
                   </div>
                   {selectedOrder.previewImage && selectedOrder.previewImage !== 'Preview too large for storage' ? (
@@ -314,6 +314,92 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
+
+                {/* Flat Strap Layout Section */}
+                {(selectedOrder.flatFrontPreview || selectedOrder.flatBackPreview) && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Palette size={14} /> Flat Print Layout
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedOrder.flatFrontPreview && (
+                        <div className="flex flex-col items-center gap-2">
+                          <img 
+                            src={selectedOrder.flatFrontPreview} 
+                            alt="Flat Front Preview" 
+                            className="w-full max-h-[300px] object-contain rounded-2xl border-2 border-white shadow-md bg-white" 
+                          />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Front Layout</span>
+                        </div>
+                      )}
+                      {selectedOrder.flatBackPreview && (
+                        <div className="flex flex-col items-center gap-2">
+                          <img 
+                            src={selectedOrder.flatBackPreview} 
+                            alt="Flat Back Preview" 
+                            className="w-full max-h-[300px] object-contain rounded-2xl border-2 border-white shadow-md bg-white" 
+                          />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Back Layout</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ID Card Design Section */}
+                {selectedOrder.idCardPreview && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-2">
+                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <CreditCard size={14} /> ID Card Design
+                      </span>
+                    </div>
+                    <div className="relative group max-w-[280px] mx-auto">
+                      <img 
+                        src={selectedOrder.idCardPreview} 
+                        alt="ID Card Preview" 
+                        className="w-full h-auto object-contain rounded-[24px] shadow-lg border-4 border-white bg-white" 
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Uploaded Assets Section */}
+                {(selectedOrder.design?.logoUrl || selectedOrder.design?.customPatternUrl || selectedOrder.design?.idCardPhotoUrl || selectedOrder.design?.idCardLogoUrl) && (
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest px-2 flex items-center gap-2">
+                      <ExternalLink size={14} className="text-[#5d5fef]" /> Client Uploaded Assets
+                    </h4>
+                    <div className="flex flex-wrap gap-4 bg-white/50 p-4 rounded-3xl border border-slate-200/60">
+                      {selectedOrder.design?.logoUrl && selectedOrder.design?.logoUrl !== 'Stored locally' && (
+                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                          <img src={selectedOrder.design.logoUrl} alt="Lanyard Logo" className="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border" />
+                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Logo File</span>
+                        </div>
+                      )}
+                      {selectedOrder.design?.customPatternUrl && selectedOrder.design?.customPatternUrl !== 'Stored locally' && (
+                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                          <img src={selectedOrder.design.customPatternUrl} alt="Custom Pattern" className="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border" />
+                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pattern File</span>
+                        </div>
+                      )}
+                      {selectedOrder.design?.idCardPhotoUrl && selectedOrder.design?.idCardPhotoUrl !== 'Stored locally' && (
+                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                          <img src={selectedOrder.design.idCardPhotoUrl} alt="ID Photo" className="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border" />
+                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">ID Photo</span>
+                        </div>
+                      )}
+                      {selectedOrder.design?.idCardLogoUrl && selectedOrder.design?.idCardLogoUrl !== 'Stored locally' && (
+                        <div className="flex flex-col items-center gap-1.5 p-2 bg-white rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                          <img src={selectedOrder.design.idCardLogoUrl} alt="ID Logo" className="w-16 h-16 object-contain rounded-lg bg-slate-50 p-1 border" />
+                          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">ID Logo</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Technical Specifications Grid */}
                 <div className="bg-white rounded-[32px] p-8 border border-[#eef2f6] shadow-sm space-y-6 w-full text-left">

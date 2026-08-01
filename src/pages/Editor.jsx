@@ -23,6 +23,8 @@ export default function Editor() {
   const navigate = useNavigate();
   const stageRef = useRef(null);
   const idCardStageRef = useRef(null);
+  const frontFlatStageRef = useRef(null);
+  const backFlatStageRef = useRef(null);
 
   const design = useConfiguratorStore(s => s.design);
   const saveLocal = useConfiguratorStore(s => s.saveLocal);
@@ -107,8 +109,13 @@ export default function Editor() {
     try {
       const preview = stageRef.current?.toDataURL({ pixelRatio: 0.5 }) || '';
       const cardPreview = idCardStageRef.current?.toDataURL({ pixelRatio: 0.5 }) || '';
+      const flatFront = frontFlatStageRef.current?.toDataURL({ pixelRatio: 0.5 }) || '';
+      const flatBack = backFlatStageRef.current?.toDataURL({ pixelRatio: 0.5 }) || '';
+
       localStorage.setItem('lanyard_temp_preview', preview);
       localStorage.setItem('lanyard_temp_card_preview', cardPreview);
+      localStorage.setItem('lanyard_temp_flat_front_preview', flatFront);
+      localStorage.setItem('lanyard_temp_flat_back_preview', flatBack);
     } catch (e) {
       console.warn('Could not save temp preview', e);
     }
@@ -284,7 +291,7 @@ export default function Editor() {
                   <span className="ml-auto text-[10px] text-slate-400">Front (left) · Back mirror (right)</span>
                 </div>
                 <div className="flex-1 overflow-auto">
-                  <FlatStrapView />
+                  <FlatStrapView frontStageRef={frontFlatStageRef} backStageRef={backFlatStageRef} />
                 </div>
               </div>
             ) : (
@@ -369,6 +376,8 @@ export default function Editor() {
             stageRef={stageRef}
           />
         </Suspense>
+        {/* Hidden flat strap view used to capture flat print layout preview */}
+        <FlatStrapView frontStageRef={frontFlatStageRef} backStageRef={backFlatStageRef} />
       </div>
     </div>
   );

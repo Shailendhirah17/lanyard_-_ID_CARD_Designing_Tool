@@ -20,7 +20,7 @@ function RulerMarks({ widthMm, strapWidthPx }) {
   return <>{marks}</>;
 }
 
-export default function FlatStrapView() {
+export default function FlatStrapView({ frontStageRef, backStageRef }) {
   const storeDesign = useConfiguratorStore((s) => s.design);
   const livePreviewPatch = useConfiguratorStore((s) => s.livePreviewPatch);
   const setField = useConfiguratorStore((s) => s.setField);
@@ -148,21 +148,8 @@ export default function FlatStrapView() {
               const newAlongOffset = (node.y() / alongScale) - baseDistanceVirtual;
               const newCrossOffset = (node.x() - strapWidthPx / 2) / crossScale;
 
-              const updated = textBlocks.map((tb) => {
-                if (tb.id === block.id) {
-                  return { ...tb, textOffset: newAlongOffset, textYOffset: newCrossOffset };
-                }
-                return tb;
-              });
-              setField('textBlocks', updated);
-              
-              if (block.id === 'block-1') {
-                setField('textOffset', newAlongOffset);
-                setField('textYOffset', newCrossOffset);
-              }
-
-              node.x(Math.max(bBlockH / 2, Math.min(strapWidthPx - bBlockH / 2, node.x())));
-              node.y(Math.max(RULER_H + bTextW / 2, Math.min(panelHeight - bTextW / 2, node.y())));
+              const setField = useConfiguratorStore.getState().setField;
+              setField(`design.textBlocks`, textBlocks.map(b => b.id === block.id ? { ...b, textOffset: newAlongOffset, textYOffset: newCrossOffset } : b));
             }}
             onMouseEnter={(e) => { if (isDraggable && i === 0) e.currentTarget.getStage().container().style.cursor = 'grab'; }}
             onMouseLeave={(e) => { e.currentTarget.getStage().container().style.cursor = 'default'; }}
@@ -268,7 +255,7 @@ export default function FlatStrapView() {
             className="rounded-2xl shadow-xl overflow-hidden border-2 border-slate-300 bg-white"
             style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.14)' }}
           >
-            <Stage width={strapWidthPx} height={panelHeight + RULER_H}>
+            <Stage width={strapWidthPx} height={panelHeight + RULER_H} ref={frontStageRef}>
               <Layer>
                 {/* Ruler */}
                 <Rect x={0} y={0} width={strapWidthPx} height={RULER_H} fill="#f8fafc" />
@@ -317,7 +304,7 @@ export default function FlatStrapView() {
             className="rounded-2xl shadow-xl overflow-hidden border-2 border-slate-300 bg-white opacity-90"
             style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.10)' }}
           >
-            <Stage width={strapWidthPx} height={panelHeight + RULER_H}>
+            <Stage width={strapWidthPx} height={panelHeight + RULER_H} ref={backStageRef}>
               <Layer>
                 <Rect x={0} y={0} width={strapWidthPx} height={RULER_H} fill="#f8fafc" />
                 <RulerMarks widthMm={widthMm} strapWidthPx={strapWidthPx} />
