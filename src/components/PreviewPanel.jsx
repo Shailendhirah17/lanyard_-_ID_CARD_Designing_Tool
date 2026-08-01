@@ -67,7 +67,33 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
   // Canvas Pan & Cursor Pointer Zoom
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isCanvasDragging, setIsCanvasDragging] = useState(false);
+  const [isSpaceDown, setIsSpaceDown] = useState(false);
   const canvasDragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const isSpaceRef = useRef(false); // use ref for event handler closure
+
+  // Space key = pan mode (like Figma)
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        isSpaceRef.current = true;
+        setIsSpaceDown(true);
+      }
+    };
+    const onKeyUp = (e) => {
+      if (e.code === 'Space') {
+        isSpaceRef.current = false;
+        setIsSpaceDown(false);
+        setIsCanvasDragging(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -102,16 +128,20 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
   }, [setZoom]);
 
   const handleCanvasPointerDown = (e) => {
-    if (e.button === 0 || e.button === 1) {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA') return;
-      setIsCanvasDragging(true);
-      canvasDragStart.current = {
-        x: e.clientX,
-        y: e.clientY,
-        px: pan.x,
-        py: pan.y,
-      };
-    }
+    // Only pan with middle-mouse OR Space+left-click
+    // Left-click alone is reserved for Konva element interaction
+    const isMiddleMouse = e.button === 1;
+    const isSpacePan = e.button === 0 && isSpaceRef.current;
+    if (!isMiddleMouse && !isSpacePan) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    setIsCanvasDragging(true);
+    canvasDragStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      px: pan.x,
+      py: pan.y,
+    };
   };
 
   const handleCanvasPointerMove = (e) => {
@@ -310,7 +340,9 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
       {/* Main 3D Canvas Viewport — Full Height */}
       <div 
         ref={containerRef}
-        className="flex-1 w-full relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 cursor-grab active:cursor-grabbing"
+        className={`flex-1 w-full relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 ${
+          isCanvasDragging ? 'cursor-grabbing' : isSpaceDown ? 'cursor-grab' : 'cursor-default'
+        }`}
         onPointerDown={handleCanvasPointerDown}
         onPointerMove={handleCanvasPointerMove}
         onPointerUp={handleCanvasPointerUp}
