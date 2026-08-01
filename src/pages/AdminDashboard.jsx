@@ -1,38 +1,106 @@
-import { useState, useEffect } from 'react';
-import { ShoppingBag, Package, Truck, CheckCircle, RefreshCcw, Search, User, MapPin, X, Eye, Info, CreditCard, Palette, Clock, Mail, Phone, Globe, ShieldCheck, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  ShoppingBag, Package, Truck, CheckCircle2, RefreshCcw, Search, User, MapPin, X, 
+  Eye, Info, CreditCard, Palette, Clock, Mail, Phone, Globe, ShieldCheck, Trash2, 
+  ExternalLink, Download, Layers, DollarSign, Activity, FileSpreadsheet, LayoutGrid,
+  List, ZoomIn, ZoomOut, Maximize2, ArrowUpRight, CheckCircle
+} from 'lucide-react';
 import { showToast } from '../components/Toast';
 import { formatCurrency } from '../lib/pricing';
 import InvoiceModal from '../components/InvoiceModal';
 
 const STATUS_OPTIONS = ['Pending', 'Processing', 'Shipping', 'Out for Delivery', 'Delivered'];
 
-const StatusBadge = ({ status }) => {
-  const colors = {
-    'Pending': 'bg-amber-100 text-amber-700 border-amber-200',
-    'Processing': 'bg-blue-100 text-blue-700 border-blue-200',
-    'Shipping': 'bg-indigo-100 text-indigo-700 border-indigo-200',
-    'Out for Delivery': 'bg-purple-100 text-purple-700 border-purple-200',
-    'Delivered': 'bg-emerald-100 text-emerald-700 border-emerald-200'
-  };
+const STATUS_CONFIG = {
+  'Pending':          { color: 'bg-amber-500/10 text-amber-600 border-amber-500/20', dot: 'bg-amber-500', icon: RefreshCcw },
+  'Processing':       { color: 'bg-blue-500/10 text-blue-600 border-blue-500/20', dot: 'bg-blue-500', icon: Package },
+  'Shipping':         { color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20', dot: 'bg-indigo-500', icon: Truck },
+  'Out for Delivery': { color: 'bg-purple-500/10 text-purple-600 border-purple-500/20', dot: 'bg-purple-500', icon: MapPin },
+  'Delivered':        { color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', dot: 'bg-emerald-500', icon: CheckCircle2 }
+};
 
+const StatusBadge = ({ status }) => {
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG['Pending'];
+  const Icon = config.icon;
   return (
-    <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-wider border whitespace-nowrap ${colors[status] || 'bg-slate-100 text-slate-700 border-slate-200'}`}>
-      {status}
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border ${config.color}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${config.dot} animate-pulse`} />
+      <Icon size={12} />
+      <span>{status}</span>
     </span>
   );
 };
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showInvoice, setShowInvoice] = useState(false);
 
+  // Zoom & Pan Lightbox States
+  const [zoomImage, setZoomImage] = useState(null);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomOffset, setZoomOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const imageContainerRef = useRef(null);
+
   useEffect(() => {
-    // Load orders from localStorage
-    const savedOrders = JSON.parse(localStorage.getItem('myLanyardOrders') || '[]');
-    setOrders(savedOrders);
+    const loadOrders = () => {
+      const savedOrders = JSON.parse(localStorage.getItem('myLanyardOrders') || '[]');
+      setOrders(savedOrders);
+    };
+    loadOrders();
+    window.addEventListener('orderStatusUpdated', loadOrders);
+    return () => window.removeEventListener('orderStatusUpdated', loadOrders);
   }, []);
+
+  // Lightbox wheel zoom handler
+  useEffect(() => {
+    const container = imageContainerRef.current;
+    if (!container) return;
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      const zoomFactor = 1.15;
+      const newScale = e.deltaY < 0 ? zoomScale * zoomFactor : zoomScale / zoomFactor;
+      setZoomScale(Math.max(0.5, Math.min(8, newScale)));
+    };
+
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => container.removeEventListener('wheel', onWheel);
+  }, [zoomImage, zoomScale]);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - zoomOffset.x, y: e.clientY - zoomOffset.y });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setZoomOffset({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y
+    });
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  const resetZoom = () => {
+    setZoomScale(1);
+    setZoomOffset({ x: 0, y: 0 });
+  };
+
+  const closeZoom = () => {
+    setZoomImage(null);
+    resetZoom();
+  };
 
   const updateOrderStatus = (orderId, newStatus) => {
     const updatedOrders = orders.map(order => 
@@ -41,37 +109,11 @@ export default function AdminDashboard() {
     setOrders(updatedOrders);
     localStorage.setItem('myLanyardOrders', JSON.stringify(updatedOrders));
     
-    // Update selectedOrder if it's the one being updated
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder({ ...selectedOrder, status: newStatus });
     }
 
-    showToast(
-      `Order ${orderId} is now ${newStatus}.`,
-      'success',
-      'Status Updated'
-    );
-    
-    window.dispatchEvent(new Event('orderStatusUpdated'));
-  };
-
-  const sendInvoice = (orderId) => {
-    const updatedOrders = orders.map(order => 
-      order.id === orderId ? { ...order, invoiceSent: true } : order
-    );
-    setOrders(updatedOrders);
-    localStorage.setItem('myLanyardOrders', JSON.stringify(updatedOrders));
-    
-    if (selectedOrder && selectedOrder.id === orderId) {
-      setSelectedOrder({ ...selectedOrder, invoiceSent: true });
-    }
-
-    showToast(
-      `Invoice for ${orderId} has been sent to the client.`,
-      'success',
-      'Invoice Sent'
-    );
-    
+    showToast(`Order ${orderId} status updated to ${newStatus}.`, 'success', 'Status Updated');
     window.dispatchEvent(new Event('orderStatusUpdated'));
   };
 
@@ -85,438 +127,520 @@ export default function AdminDashboard() {
         setSelectedOrder(null);
       }
 
-      showToast(
-        `Order ${orderId} has been deleted.`,
-        'success',
-        'Order Deleted'
-      );
-      
+      showToast(`Order ${orderId} has been deleted.`, 'success', 'Order Deleted');
       window.dispatchEvent(new Event('orderStatusUpdated'));
     }
   };
 
-  const filteredOrders = orders.filter(order => 
-    order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const exportOrdersCSV = () => {
+    if (orders.length === 0) {
+      showToast('No orders available to export', 'error');
+      return;
+    }
+    const headers = ['Order ID', 'Customer', 'Email', 'Design Name', 'Total Price', 'Status', 'Date', 'Address'];
+    const rows = orders.map(o => [
+      o.id,
+      `"${o.customer || ''}"`,
+      `"${o.email || ''}"`,
+      `"${o.designName || 'Custom Project'}"`,
+      o.price || o.pricing?.totalPrice || 0,
+      o.status || 'Pending',
+      `"${o.date || ''}"`,
+      `"${o.shippingAddress || ''}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `orders_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Orders exported to CSV successfully', 'success');
+  };
+
+  // Filtered orders list
+  const filteredOrders = useMemo(() => {
+    return orders.filter(order => {
+      const matchSearch = (
+        (order.customer || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (order.designName || '').toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      const matchStatus = statusFilter === 'all' || order.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [orders, searchTerm, statusFilter]);
+
+  // Analytics Metrics
+  const totalRevenue = useMemo(() => {
+    return orders.reduce((sum, o) => sum + (Number(o.price) || Number(o.pricing?.totalPrice) || 0), 0);
+  }, [orders]);
+
+  const statusCounts = useMemo(() => {
+    const counts = { Pending: 0, Processing: 0, Shipping: 0, 'Out for Delivery': 0, Delivered: 0 };
+    orders.forEach(o => {
+      if (counts[o.status] !== undefined) counts[o.status]++;
+    });
+    return counts;
+  }, [orders]);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto min-h-screen text-[#1a1a1a]">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-        <div>
-          <h1 className="text-3xl font-bold text-[#1a1a1a]">gotek</h1>
-          <p className="text-[#919191] mt-1 text-lg">Manage orders and update delivery status.</p>
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans pb-16">
+      
+      {/* ── Executive Header Banner ── */}
+      <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border-b border-slate-800 pt-8 pb-10 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black shadow-lg shadow-indigo-500/20">
+                <ShieldCheck size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Admin Command Center</h1>
+                  <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/30 uppercase tracking-widest flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Live Production
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5">
+                  Manage incoming client print orders, verify vector design specs & track production queues.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setOrders(JSON.parse(localStorage.getItem('myLanyardOrders') || '[]')); showToast('Refreshed orders queue', 'info'); }}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold transition-all cursor-pointer"
+            >
+              <RefreshCcw size={14} />
+              <span>Refresh</span>
+            </button>
+            <button
+              onClick={exportOrdersCSV}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
+            >
+              <FileSpreadsheet size={14} />
+              <span>Export CSV</span>
+            </button>
+          </div>
         </div>
+
+        {/* ── KPI Stats Bar ── */}
+        <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-8">
+          <div className="bg-slate-800/60 backdrop-blur-md border border-slate-700/60 rounded-2xl p-4 flex flex-col">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              Total Revenue
+              <DollarSign size={14} className="text-emerald-400" />
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-white mt-2">{formatCurrency(totalRevenue)}</span>
+            <span className="text-[10px] text-emerald-400 mt-1 font-semibold">From {orders.length} total orders</span>
+          </div>
+
+          <div className="bg-slate-800/60 backdrop-blur-md border border-slate-700/60 rounded-2xl p-4 flex flex-col">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              Total Orders
+              <ShoppingBag size={14} className="text-indigo-400" />
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-white mt-2">{orders.length}</span>
+            <span className="text-[10px] text-indigo-400 mt-1 font-semibold">All time received</span>
+          </div>
+
+          <div className="bg-slate-800/60 backdrop-blur-md border border-slate-700/60 rounded-2xl p-4 flex flex-col">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              Pending Action
+              <RefreshCcw size={14} className="text-amber-400" />
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-amber-400 mt-2">{statusCounts['Pending']}</span>
+            <span className="text-[10px] text-amber-400/80 mt-1 font-semibold">Awaiting review</span>
+          </div>
+
+          <div className="bg-slate-800/60 backdrop-blur-md border border-slate-700/60 rounded-2xl p-4 flex flex-col">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              In Production
+              <Package size={14} className="text-blue-400" />
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-blue-400 mt-2">{statusCounts['Processing']}</span>
+            <span className="text-[10px] text-blue-400/80 mt-1 font-semibold">Print line active</span>
+          </div>
+
+          <div className="bg-slate-800/60 backdrop-blur-md border border-slate-700/60 rounded-2xl p-4 flex flex-col col-span-2 sm:col-span-1">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              Completed
+              <CheckCircle2 size={14} className="text-emerald-400" />
+            </span>
+            <span className="text-xl sm:text-2xl font-black text-emerald-400 mt-2">{statusCounts['Delivered']}</span>
+            <span className="text-[10px] text-emerald-400/80 mt-1 font-semibold">Fully fulfilled</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main Content Area ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 mt-8">
         
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#919191]">
-            <Search size={18} />
+        {/* Controls Bar: Search + Filter Tabs + View Mode */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 bg-slate-800/40 border border-slate-800 p-3 rounded-2xl">
+          
+          {/* Search bar */}
+          <div className="relative flex-1 max-w-md">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by Order ID, client name, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-10 pr-10 py-2 text-xs sm:text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                <X size={14} />
+              </button>
+            )}
           </div>
-          <input
-            type="text"
-            placeholder="Search orders or customers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-11 pr-4 py-3 bg-white border border-[#eef2f6] rounded-2xl w-full md:w-[320px] focus:outline-none focus:ring-2 focus:ring-[#5d5fef]/20 transition-all shadow-sm text-[#1a1a1a] placeholder:text-[#919191]"
-          />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-10">
-        <div className="bg-white p-6 rounded-[24px] border border-[#eef2f6] shadow-sm">
-          <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-[14px] flex items-center justify-center mb-4">
-            <RefreshCcw size={20} />
+          {/* Status filter tabs */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+            <button
+              onClick={() => setStatusFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                statusFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              All ({orders.length})
+            </button>
+            {STATUS_OPTIONS.map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  statusFilter === st ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                {st} ({statusCounts[st] || 0})
+              </button>
+            ))}
           </div>
-          <p className="text-[#919191] text-sm font-medium">Pending</p>
-          <p className="text-2xl font-bold text-[#1a1a1a] mt-1">
-            {orders.filter(o => o.status === 'Pending').length}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-[24px] border border-[#eef2f6] shadow-sm">
-          <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-[14px] flex items-center justify-center mb-4">
-            <Package size={20} />
-          </div>
-          <p className="text-[#919191] text-sm font-medium">Processing</p>
-          <p className="text-2xl font-bold text-[#1a1a1a] mt-1">
-            {orders.filter(o => o.status === 'Processing').length}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-[24px] border border-[#eef2f6] shadow-sm">
-          <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-[14px] flex items-center justify-center mb-4">
-            <Truck size={20} />
-          </div>
-          <p className="text-[#919191] text-sm font-medium">Shipping</p>
-          <p className="text-2xl font-bold text-[#1a1a1a] mt-1">
-            {orders.filter(o => o.status === 'Shipping').length}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-[24px] border border-[#eef2f6] shadow-sm">
-          <div className="w-10 h-10 bg-purple-100 text-purple-600 rounded-[14px] flex items-center justify-center mb-4">
-            <MapPin size={20} />
-          </div>
-          <p className="text-[#919191] text-sm font-medium">Out for Delivery</p>
-          <p className="text-2xl font-bold text-[#1a1a1a] mt-1">
-            {orders.filter(o => o.status === 'Out for Delivery').length}
-          </p>
-        </div>
-        <div className="bg-white p-6 rounded-[24px] border border-[#eef2f6] shadow-sm">
-          <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-[14px] flex items-center justify-center mb-4">
-            <CheckCircle size={20} />
-          </div>
-          <p className="text-[#919191] text-sm font-medium">Delivered</p>
-          <p className="text-2xl font-bold text-[#1a1a1a] mt-1">
-            {orders.filter(o => o.status === 'Delivered').length}
-          </p>
-        </div>
-      </div>
 
-      <div className="bg-white rounded-[32px] border border-[#eef2f6] shadow-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-[#f8faff] border-b border-[#eef2f6]">
-                <th className="px-8 py-5 text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wider">PROJECT REF</th>
-                <th className="px-8 py-5 text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wider">CLIENT NAME</th>
-                <th className="px-8 py-5 text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wider">DESIGN TYPE</th>
-                <th className="px-8 py-5 text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wider">DATE</th>
-                <th className="px-8 py-5 text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wider">CURRENT STAGE</th>
-                <th className="px-8 py-5 text-[13px] font-bold text-[#1a1a1a] uppercase tracking-wider">QUICK UPDATE</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#eef2f6]">
-              {filteredOrders.length > 0 ? filteredOrders.map((order) => (
-                <tr 
-                  key={order.id} 
-                  onClick={() => setSelectedOrder(order)}
-                  className="hover:bg-[#f8faff] transition-all cursor-pointer group"
-                >
-                  <td className="px-8 py-6">
-                    <span className="font-black text-[#5d5fef] bg-[#5d5fef]/5 px-3 py-1.5 rounded-lg border border-[#5d5fef]/10 transition-all group-hover:shadow-md whitespace-nowrap inline-block">
+          {/* View mode toggle */}
+          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 shrink-0">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${viewMode === 'grid' ? 'bg-slate-800 text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              title="Grid Cards View"
+            >
+              <LayoutGrid size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-lg text-xs transition-all cursor-pointer ${viewMode === 'table' ? 'bg-slate-800 text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+              title="Table View"
+            >
+              <List size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* ── Orders Display ── */}
+        {filteredOrders.length === 0 ? (
+          <div className="bg-slate-800/30 border border-slate-800 rounded-3xl p-16 text-center">
+            <div className="w-16 h-16 bg-slate-800 text-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-700">
+              <ShoppingBag size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-white">No Production Orders Found</h3>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Try adjusting your search criteria or status filter.'
+                : 'No orders have been submitted yet by customers.'}
+            </p>
+          </div>
+        ) : viewMode === 'grid' ? (
+          /* Grid View: High-Visual Cards */
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {filteredOrders.map((order) => (
+              <div 
+                key={order.id} 
+                onClick={() => navigate(`/admin/orders/${order.id}`)}
+                className="bg-slate-800/60 border border-slate-700/70 rounded-3xl p-5 hover:border-indigo-500/50 hover:shadow-xl transition-all flex flex-col group cursor-pointer"
+              >
+                {/* Order Top Line */}
+                <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-700/60">
+                  <div>
+                    <span className="text-xs font-black text-indigo-400 tracking-wide font-mono bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
                       {order.id}
                     </span>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-[#f8faff] border border-[#eef2f6] flex items-center justify-center text-slate-400 group-hover:bg-[#5d5fef] group-hover:text-white transition-all">
-                        <User size={18} />
-                      </div>
-                      <div>
-                        <p className="font-black text-[#1a1a1a] group-hover:text-[#5d5fef] transition-colors">{order.customer}</p>
-                        <p className="text-[11px] font-bold text-[#919191] tracking-tight">{order.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-2">
-                      <Palette size={14} className="text-[#5d5fef] opacity-40" />
-                      <span className="text-[13px] font-bold text-[#1a1a1a] line-clamp-1">{order.designName || 'Custom Design'}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-2">
-                      <Clock size={14} className="text-slate-300" />
-                      <span className="text-[13px] font-bold text-[#919191]">{order.date}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <StatusBadge status={order.status} />
-                  </td>
-                  <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-1.5">
-                      {STATUS_OPTIONS.map((status) => (
-                        <button
-                          key={status}
-                          onClick={() => updateOrderStatus(order.id, status)}
-                          disabled={order.status === status}
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                            order.status === status 
-                              ? 'bg-slate-50 text-slate-300 cursor-not-allowed border border-transparent' 
-                              : 'bg-white border border-[#eef2f6] text-[#919191] hover:bg-[#5d5fef] hover:text-white hover:border-[#5d5fef] hover:shadow-xl hover:shadow-[#5d5fef]/20 active:scale-90'
-                          }`}
-                          title={`Mark as ${status}`}
-                        >
-                          {status === 'Pending' && <RefreshCcw size={16} />}
-                          {status === 'Processing' && <Package size={16} />}
-                          {status === 'Shipping' && <Truck size={16} />}
-                          {status === 'Out for Delivery' && <MapPin size={16} />}
-                          {status === 'Delivered' && <CheckCircle size={16} />}
-                        </button>
-                      ))}
-                      <div className="w-px h-6 bg-[#eef2f6] mx-1"></div>
-                      <button
-                        onClick={() => deleteOrder(order.id)}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-all bg-white border border-[#eef2f6] text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-xl hover:shadow-red-500/20 active:scale-90"
-                        title="Delete Order"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan="6" className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center">
-                      <ShoppingBag size={48} className="text-slate-200 mb-4" />
-                      <p className="text-[#1a1a1a] font-bold text-lg">No orders found</p>
-                      <p className="text-[#919191]">Try searching for something else</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                    <span className="text-[11px] text-slate-400 ml-2 font-medium">{order.date}</span>
+                  </div>
+                  <StatusBadge status={order.status} />
+                </div>
 
-      {/* Professional Order Details Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in p-4">
-          <div className="bg-white rounded-[40px] shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row transform animate-scale-in border border-white/20">
-            {/* Left: Design Preview Panel */}
-            <div className="md:w-3/5 bg-[#f8faff] p-10 flex flex-col items-center border-r border-[#eef2f6] overflow-y-auto custom-scrollbar">
-              <div className="w-full space-y-10 py-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#5d5fef] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#5d5fef]/20">
-                      <ShieldCheck size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black text-[#1a1a1a]">Production Proofs</h3>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Technical Specifications</p>
-                    </div>
+                {/* Customer Info */}
+                <div className="py-3.5 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors flex items-center gap-1.5">
+                      <User size={14} className="text-indigo-400" /> {order.customer || 'Guest Client'}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 truncate max-w-[220px] font-mono mt-0.5">{order.email}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-base font-black text-emerald-400">{formatCurrency(order.price || order.pricing?.totalPrice || 0)}</span>
+                    <p className="text-[10px] text-slate-400 font-semibold">{order.design?.quantity || 100} units</p>
                   </div>
                 </div>
 
-                {/* Lanyard Design Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between px-2">
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <Palette size={14} /> Lanyard Strap
-                    </span>
-                    <span className="text-[10px] font-bold text-[#5d5fef] bg-[#5d5fef]/5 px-3 py-1 rounded-full border border-[#5d5fef]/10">
-                      Sublimated Print
-                    </span>
+                {/* Production Previews Thumbnails Grid */}
+                <div className="bg-slate-900/80 rounded-2xl p-3 border border-slate-800 my-2 flex items-center justify-around gap-2">
+                  {/* Lanyard 2D View Thumb */}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); if (order.previewImage) setZoomImage(order.previewImage); }}
+                    className="flex flex-col items-center gap-1 cursor-pointer group/thumb"
+                  >
+                    <div className="w-16 h-16 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center p-1 group-hover/thumb:border-indigo-500 transition-colors">
+                      {order.previewImage && order.previewImage !== 'Preview too large for storage' ? (
+                        <img src={order.previewImage} alt="Lanyard 2D" className="w-full h-full object-contain" />
+                      ) : (
+                        <Palette size={20} className="text-slate-600" />
+                      )}
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">2D Lanyard</span>
                   </div>
-                  {selectedOrder.previewImage && selectedOrder.previewImage !== 'Preview too large for storage' ? (
-                    <div className="relative group">
-                      <img 
-                        src={selectedOrder.previewImage} 
-                        alt="Lanyard Design" 
-                        className="w-full h-auto object-contain rounded-[32px] shadow-2xl border-4 border-white bg-white transition-transform duration-500 group-hover:scale-[1.02]" 
-                      />
-                      <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px] pointer-events-none" />
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-video bg-white/50 rounded-[32px] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300">
-                      <Palette size={48} className="mb-4 opacity-20" />
-                      <p className="text-xs font-black uppercase tracking-widest">No Lanyard Preview Available</p>
-                    </div>
-                  )}
-                </div>
 
-                {/* Technical Specifications Grid */}
-                <div className="bg-white rounded-[32px] p-8 border border-[#eef2f6] shadow-sm space-y-6 w-full text-left">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 border-b border-[#eef2f6] pb-3">
-                    <Info size={14} className="text-[#5d5fef]" /> Order Specifications
-                  </h4>
-                  
-                  <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                      <span className="text-[#919191]">Width:</span>
-                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.width || '20mm'}</span>
+                  {/* Flat Front Layout Thumb */}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); if (order.flatFrontPreview) setZoomImage(order.flatFrontPreview); }}
+                    className="flex flex-col items-center gap-1 cursor-pointer group/thumb"
+                  >
+                    <div className="w-16 h-16 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center p-1 group-hover/thumb:border-indigo-500 transition-colors">
+                      {order.flatFrontPreview ? (
+                        <img src={order.flatFrontPreview} alt="Flat Front" className="w-full h-full object-contain" />
+                      ) : (
+                        <Layers size={20} className="text-slate-600" />
+                      )}
                     </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                      <span className="text-[#919191]">Length:</span>
-                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.length || '38 inches'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                      <span className="text-[#919191]">Printing Method:</span>
-                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.printingMethod || 'Sublimated'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                      <span className="text-[#919191]">Lanyard Style:</span>
-                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.lanyardStyle || 'Single Ended'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                      <span className="text-[#919191]">Lanyard Color:</span>
-                      <span className="font-bold text-[#1a1a1a] flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: selectedOrder.design?.lanyardColor || '#ffffff' }} />
-                        {selectedOrder.design?.lanyardColor || '#ffffff'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2">
-                      <span className="text-[#919191]">Clip Type:</span>
-                      <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.clipType || 'Metal Hook'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-100 pb-2 col-span-2">
-                      <span className="text-[#919191]">Accessories:</span>
-                      <span className="font-bold text-[#1a1a1a]">{(selectedOrder.design?.accessories || ['Badge Holder']).join(', ')}</span>
-                    </div>
-                    
-                    {selectedOrder.design?.customTextLeft || selectedOrder.design?.customTextCenter || selectedOrder.design?.customTextRight ? (
-                      <div className="col-span-2 pt-2 space-y-2">
-                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Custom Lanyard Text</span>
-                        <div className="bg-[#f8faff] p-4 rounded-2xl border border-[#eef2f6] font-mono text-xs text-slate-600 break-all space-y-1">
-                          {selectedOrder.design?.customTextLeft && <p>Left Strap: "{selectedOrder.design.customTextLeft}"</p>}
-                          {selectedOrder.design?.customTextCenter && <p>Center Strap: "{selectedOrder.design.customTextCenter}"</p>}
-                          {selectedOrder.design?.customTextRight && <p>Right Strap: "{selectedOrder.design.customTextRight}"</p>}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {selectedOrder.design?.idCardSize ? (
-                      <div className="col-span-2 pt-4 border-t border-[#eef2f6] grid grid-cols-2 gap-x-8 gap-y-4">
-                        <div className="flex justify-between col-span-2 border-b border-slate-100 pb-2">
-                          <span className="text-[#919191]">ID Card Size:</span>
-                          <span className="font-bold text-[#1a1a1a]">{selectedOrder.design?.idCardSize}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-slate-100 pb-2">
-                          <span className="text-[#919191]">Front BG:</span>
-                          <span className="font-bold text-[#1a1a1a] flex items-center gap-1.5">
-                            <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: selectedOrder.design?.idCardFrontBg || '#ffffff' }} />
-                            {selectedOrder.design?.idCardFrontBg || '#ffffff'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between border-b border-slate-100 pb-2">
-                          <span className="text-[#919191]">Back BG:</span>
-                          <span className="font-bold text-[#1a1a1a] flex items-center gap-1.5">
-                            <span className="w-3 h-3 rounded-full border border-slate-300" style={{ backgroundColor: selectedOrder.design?.idCardBackBg || '#ffffff' }} />
-                            {selectedOrder.design?.idCardBackBg || '#ffffff'}
-                          </span>
-                        </div>
-                      </div>
-                    ) : null}
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">Flat Layout</span>
                   </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Right: Order Information & Management */}
-            <div className="md:w-2/5 p-12 flex flex-col overflow-y-auto custom-scrollbar bg-white">
-              <div className="flex justify-between items-start mb-10">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black text-[#5d5fef] uppercase tracking-[0.2em] bg-[#5d5fef]/5 px-3 py-1.5 rounded-xl border border-[#5d5fef]/10 whitespace-nowrap">
-                      {selectedOrder.id}
-                    </span>
-                    <StatusBadge status={selectedOrder.status} />
-                  </div>
-                  <h3 className="text-3xl font-black text-[#1a1a1a] mt-6 tracking-tight leading-tight">
-                    {selectedOrder.designName || 'Custom Lanyard Project'}
-                  </h3>
-                  <p className="text-slate-400 font-bold mt-2 flex items-center gap-2 text-sm">
-                    <Clock size={16} /> Placed on {selectedOrder.date}
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setSelectedOrder(null)}
-                  className="p-3 bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all shadow-sm"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="space-y-10 flex-1">
-                {/* Customer Profile Section */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Customer Profile</h4>
-                  <div className="bg-[#f8faff] rounded-[32px] p-6 border border-[#eef2f6] space-y-5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-[#5d5fef] shadow-sm border border-[#eef2f6]">
-                        <User size={28} />
-                      </div>
-                      <div>
-                        <p className="text-lg font-black text-[#1a1a1a]">{selectedOrder.customer}</p>
-                        <p className="text-sm font-bold text-[#5d5fef]">{selectedOrder.email}</p>
-                      </div>
+                  {/* ID Card Front Thumb */}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); if (order.idCardPreview) setZoomImage(order.idCardPreview); }}
+                    className="flex flex-col items-center gap-1 cursor-pointer group/thumb"
+                  >
+                    <div className="w-16 h-16 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center p-1 group-hover/thumb:border-indigo-500 transition-colors">
+                      {order.idCardPreview ? (
+                        <img src={order.idCardPreview} alt="ID Card" className="w-full h-full object-contain" />
+                      ) : (
+                        <CreditCard size={20} className="text-slate-600" />
+                      )}
                     </div>
-                    <div className="grid grid-cols-1 gap-3 pt-4 border-t border-[#eef2f6]">
-                      <div className="flex items-center gap-3 text-slate-500">
-                        <Mail size={16} />
-                        <span className="text-sm font-medium">{selectedOrder.email}</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-500">
-                        <Phone size={16} />
-                        <span className="text-sm font-medium">+91 98765 43210</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-slate-500">
-                        <Globe size={16} />
-                        <span className="text-sm font-medium">Bangalore, India</span>
-                      </div>
-                    </div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase">ID Card</span>
                   </div>
                 </div>
 
-                {/* Status Management Section */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Update Status</h4>
-                  <div className="grid grid-cols-1 gap-2">
-                    {STATUS_OPTIONS.map((status) => (
-                      <button
-                        key={status}
-                        onClick={() => updateOrderStatus(selectedOrder.id, status)}
-                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                          selectedOrder.status === status
-                            ? 'bg-[#5d5fef] border-[#5d5fef] text-white shadow-xl shadow-[#5d5fef]/30'
-                            : 'bg-white border-[#eef2f6] text-[#919191] hover:border-[#5d5fef]/30 hover:bg-[#f8faff]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedOrder.status === status ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>
-                            {status === 'Pending' && <RefreshCcw size={14} />}
-                            {status === 'Processing' && <Package size={14} />}
-                            {status === 'Shipping' && <Truck size={14} />}
-                            {status === 'Out for Delivery' && <MapPin size={14} />}
-                            {status === 'Delivered' && <CheckCircle size={14} />}
-                          </div>
-                          <span className="text-sm font-black">{status}</span>
-                        </div>
-                        {selectedOrder.status === status && <CheckCircle size={18} />}
-                      </button>
+                {/* Key Specs Pill */}
+                <div className="flex items-center justify-between text-[11px] text-slate-400 py-2 border-b border-slate-700/60">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: order.design?.lanyardColor || '#4f46e5' }} />
+                    <span className="font-mono text-slate-300">{order.design?.lanyardColor || '#4f46e5'}</span>
+                  </div>
+                  <span className="font-semibold text-slate-300">{order.design?.printingMethod || 'Sublimated'}</span>
+                  <span className="font-semibold text-slate-300">{order.design?.clipType || 'Metal Hook'}</span>
+                </div>
+
+                {/* Quick Status Control Dropdown */}
+                <div className="pt-3 flex items-center justify-between gap-2 mt-auto">
+                  <select
+                    value={order.status}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => { e.stopPropagation(); updateOrderStatus(order.id, e.target.value); }}
+                    className="bg-slate-900 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    {STATUS_OPTIONS.map(st => (
+                      <option key={st} value={st}>{st}</option>
                     ))}
-                  </div>
-                </div>
+                  </select>
 
-                {/* Order Summary Section */}
-                <div className="space-y-4 pb-4">
-                  <div className="flex items-center justify-between px-1">
-                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest w-24 leading-tight">Order Financials</h4>
-                    <button 
-                      onClick={() => setShowInvoice(true)}
-                      className="text-[11px] font-black text-[#5d5fef] hover:text-[#4a4cd9] uppercase tracking-widest flex items-center gap-2 bg-[#f8faff] hover:bg-[#5d5fef]/10 px-6 py-2.5 rounded-full border border-[#eef2f6] hover:border-[#5d5fef]/20 transition-all shadow-sm"
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/admin/orders/${order.id}`); }}
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-500 text-indigo-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                      title="Inspect Specs & Proofs"
                     >
-                      <Eye size={14} />
-                      View Invoice
+                      <Eye size={13} />
+                      <span>Inspect</span>
+                    </button>
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setShowInvoice(true); }}
+                      className="p-1.5 rounded-xl bg-slate-700/60 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+                      title="Print Invoice"
+                    >
+                      <Download size={14} />
+                    </button>
+
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
+                      className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white transition-colors cursor-pointer"
+                      title="Delete Order"
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </div>
-                  <div className="bg-[#1a1a1a] rounded-[32px] p-8 text-white relative overflow-hidden shadow-2xl">
-                    <div className="relative z-10 flex justify-between items-center">
-                      <div>
-                        <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.2em] mb-2">Total Project Value</p>
-                        <p className="text-4xl font-black">{formatCurrency(selectedOrder.total)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.2em] mb-2">Quantity</p>
-                        <p className="text-2xl font-black">{selectedOrder.quantity || '250'} <span className="text-xs opacity-60">Units</span></p>
-                      </div>
-                    </div>
-                    {/* Background decoration */}
-                    <div className="absolute -right-10 -bottom-10 opacity-10 rotate-12">
-                      <ShoppingBag size={150} />
-                    </div>
-                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+        ) : (
+          /* Table View: Dense Production Row Layout */
+          <div className="bg-slate-800/60 border border-slate-700/80 rounded-3xl overflow-hidden shadow-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-900/90 border-b border-slate-700 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <th className="px-5 py-4">Order ID</th>
+                    <th className="px-5 py-4">Client</th>
+                    <th className="px-5 py-4">Project Name</th>
+                    <th className="px-5 py-4">Date</th>
+                    <th className="px-5 py-4">Total</th>
+                    <th className="px-5 py-4">Status</th>
+                    <th className="px-5 py-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/60 text-xs text-slate-200 font-medium">
+                  {filteredOrders.map(order => (
+                    <tr 
+                      key={order.id} 
+                      onClick={() => navigate(`/admin/orders/${order.id}`)}
+                      className="hover:bg-slate-800/90 transition-colors cursor-pointer"
+                    >
+                      <td className="px-5 py-4">
+                        <span className="font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                          {order.id}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div>
+                          <p className="font-bold text-white">{order.customer}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">{order.email}</p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="font-semibold text-slate-300">{order.designName || 'Custom Project'}</span>
+                      </td>
+                      <td className="px-5 py-4 text-slate-400">{order.date}</td>
+                      <td className="px-5 py-4 font-bold text-emerald-400">{formatCurrency(order.price || order.pricing?.totalPrice || 0)}</td>
+                      <td className="px-5 py-4">
+                        <StatusBadge status={order.status} />
+                      </td>
+                      <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/admin/orders/${order.id}`); }}
+                            className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-colors cursor-pointer"
+                          >
+                            Inspect Specs
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); setShowInvoice(true); }}
+                            className="p-1.5 rounded-lg bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                            title="Invoice"
+                          >
+                            <Download size={14} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteOrder(order.id); }}
+                            className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Interactive Zoom & Pan Lightbox Modal ── */}
+      {zoomImage && (
+        <div 
+          className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-xl flex flex-col select-none animate-fade-in"
+          onMouseUp={handleMouseUp}
+        >
+          {/* Lightbox Controls Header */}
+          <div className="h-14 bg-slate-950/80 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 z-10">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Proofing Inspector</span>
+              <span className="text-xs font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-full border border-indigo-500/20">
+                {Math.round(zoomScale * 100)}%
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setZoomScale(s => Math.min(8, s * 1.25))}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer" 
+                title="Zoom In"
+              >
+                <ZoomIn size={16} />
+              </button>
+              <button 
+                onClick={() => setZoomScale(s => Math.max(0.5, s / 1.25))}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer" 
+                title="Zoom Out"
+              >
+                <ZoomOut size={16} />
+              </button>
+              <button 
+                onClick={resetZoom}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Reset Zoom
+              </button>
+              <button 
+                onClick={closeZoom}
+                className="p-2 rounded-xl bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer ml-4"
+                title="Close Inspector"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Lightbox Interactive Image Canvas */}
+          <div 
+            ref={imageContainerRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            className={`flex-1 overflow-hidden flex items-center justify-center p-8 relative cursor-${isDragging ? 'grabbing' : 'grab'}`}
+          >
+            <img 
+              src={zoomImage} 
+              alt="Inspect Proof" 
+              draggable={false}
+              className="max-w-none transition-transform duration-75 ease-out shadow-2xl rounded-2xl border-4 border-slate-700 bg-white"
+              style={{
+                transform: `translate(${zoomOffset.x}px, ${zoomOffset.y}px) scale(${zoomScale})`,
+              }}
+            />
           </div>
         </div>
       )}
 
-      {/* Shared Invoice Modal */}
+      {/* Invoice Printable Modal */}
       {showInvoice && selectedOrder && (
-        <InvoiceModal order={selectedOrder} onClose={() => setShowInvoice(false)} />
+        <InvoiceModal 
+          order={selectedOrder} 
+          onClose={() => setShowInvoice(false)} 
+        />
       )}
+
     </div>
   );
 }

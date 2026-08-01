@@ -10,10 +10,12 @@ import { PlusCircle, CheckCircle2, X, FileText, Calendar, Truck, ShieldCheck, Lo
 import ToastContainer, { showToast } from './components/Toast';
 import { useAuth } from './hooks/useAuth';
 import { useProjectStore } from './store/useProjectStore';
+import { useIdCardDesignerStore } from './store/useIdCardDesignerStore';
 
 // ─── Code-split pages ────────────────────────────────────────────
 const Dashboard      = lazy(() => import('./pages/Dashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminOrderDetail = lazy(() => import('./pages/AdminOrderDetail'));
 const Orders         = lazy(() => import('./pages/Orders'));
 const Templates      = lazy(() => import('./pages/Templates'));
 const IdCardPro      = lazy(() => import('./pages/IdCardPro'));
@@ -184,8 +186,8 @@ export default function App() {
         return;
       }
 
-      const previewImage      = stageRef.current?.toDataURL({ pixelRatio: 2 }) || '';
-      const idCardPreviewImage = idCardStageRef.current?.toDataURL({ pixelRatio: 2 }) || '';
+      const previewImage      = stageRef.current?.toDataURL({ pixelRatio: 4.0 }) || '';
+      const idCardPreviewImage = idCardStageRef.current?.toDataURL({ pixelRatio: 4.0 }) || '';
 
       let logoUrl         = design.logoUrl;
       let customPatternUrl = design.customPatternUrl;
@@ -219,7 +221,7 @@ export default function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            design: { ...storedDesign, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 500000 ? '' : previewImage },
+            design: { ...storedDesign, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 1500000 ? '' : previewImage },
             order:  { quantity: design.quantity, pricePerUnit: pricing.pricePerUnit, totalPriceInInr: pricing.total },
           }),
         });
@@ -231,8 +233,8 @@ export default function App() {
         userEmail: user?.email || 'guest@test.com', date: new Date().toISOString().split('T')[0],
         status: 'Pending', total: pricing.total, designName: design.idCard.name || 'Custom Lanyard',
         design: storedDesign, quantity: design.quantity, pricePerUnit: pricing.pricePerUnit,
-        previewImage: previewImage.length > 500000 ? '' : previewImage,
-        idCardPreview: idCardPreviewImage.length > 500000 ? '' : idCardPreviewImage,
+        previewImage: previewImage.length > 1500000 ? '' : previewImage,
+        idCardPreview: idCardPreviewImage.length > 1500000 ? '' : idCardPreviewImage,
       };
 
       try {
@@ -312,7 +314,7 @@ export default function App() {
             {/* ── Dashboard ── */}
             <Route path="/dashboard" element={
               <RequireAuth user={user}>
-                <Dashboard user={user} />
+                {user?.isAdmin ? <Navigate to="/admin" replace /> : <Dashboard user={user} />}
               </RequireAuth>
             } />
 
@@ -320,6 +322,11 @@ export default function App() {
             <Route path="/admin" element={
               <RequireAdmin user={user}>
                 <AdminDashboard />
+              </RequireAdmin>
+            } />
+            <Route path="/admin/orders/:id" element={
+              <RequireAdmin user={user}>
+                <AdminOrderDetail />
               </RequireAdmin>
             } />
 
@@ -330,6 +337,28 @@ export default function App() {
                   onStart={(type, mode) => {
                     const createProject = useProjectStore.getState().createProject;
                     if (createProject) createProject(type);
+                    useConfiguratorStore.getState().resetDesign();
+                    useIdCardDesignerStore.setState({
+                      frontElements: [],
+                      backElements: [],
+                      cardSettings: {
+                        width: 54,
+                        height: 86,
+                        orientation: 'portrait',
+                        background: '#ffffff',
+                        material: 'PVC',
+                        borderThickness: 3,
+                        borderColor: '#4f46e5',
+                        roundedCorners: 12,
+                        frameStyle: 'corporate',
+                        slotType: 'oval',
+                        slotColor: '#cbd5e1',
+                      },
+                      history: [],
+                      historyIndex: -1,
+                      selectedId: null,
+                      activeSide: 'front'
+                    });
                     if (mode === 'template') {
                       navigate('/templates');
                     } else if (mode === 'import') {
@@ -360,22 +389,8 @@ export default function App() {
               </RequireAuth>
             } />
 
-            {/* ── Legacy Customizer (lanyard + ID combo) ── */}
-            <Route path="/studio" element={
-              <RequireAuth user={user}>
-                <div className="h-full">
-                  <CustomizerPage
-                    stageRef={stageRef}
-                    idCardStageRef={idCardStageRef}
-                    zoom={zoom} setZoom={setZoom}
-                    currentStep={currentStep} setCurrentStep={setCurrentStep}
-                    submitDesign={submitDesign}
-                    submitState={submitState}
-                    pricing={pricing}
-                  />
-                </div>
-              </RequireAuth>
-            } />
+            {/* ── Legacy Customizer Redirect ── */}
+            <Route path="/studio" element={<Navigate to="/editor" replace />} />
 
             {/* ── Templates gallery ── */}
             <Route path="/templates" element={

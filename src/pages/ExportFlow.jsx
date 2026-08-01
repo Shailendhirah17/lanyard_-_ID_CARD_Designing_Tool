@@ -575,10 +575,14 @@ export default function ExportFlow({ project, pricing, user }) {
     // Retrieve captured canvas previews
     const previewImage = localStorage.getItem('lanyard_temp_preview') || '';
     const idCardPreviewImage = localStorage.getItem('lanyard_temp_card_preview') || '';
+    const flatFrontPreview = localStorage.getItem('lanyard_temp_flat_front_preview') || '';
+    const flatBackPreview = localStorage.getItem('lanyard_temp_flat_back_preview') || '';
 
     // Clear temporary items
     localStorage.removeItem('lanyard_temp_preview');
     localStorage.removeItem('lanyard_temp_card_preview');
+    localStorage.removeItem('lanyard_temp_flat_front_preview');
+    localStorage.removeItem('lanyard_temp_flat_back_preview');
 
     const newOrder = {
       id: orderId,
@@ -593,9 +597,12 @@ export default function ExportFlow({ project, pricing, user }) {
       pricePerUnit: unitPrice,
       address: address,
       format: formatLabel(selectedFormat),
-      previewImage: previewImage.length > 500000 ? '' : previewImage,
-      idCardPreview: idCardPreviewImage.length > 500000 ? '' : idCardPreviewImage,
+      previewImage: previewImage.length > 1500000 ? '' : previewImage,
+      idCardPreview: idCardPreviewImage.length > 1500000 ? '' : idCardPreviewImage,
+      flatFrontPreview: flatFrontPreview.length > 1500000 ? '' : flatFrontPreview,
+      flatBackPreview: flatBackPreview.length > 1500000 ? '' : flatBackPreview,
       design: {
+        ...design,
         printingMethod: design?.printingMethod,
         lanyardStyle: design?.lanyardStyle,
         width: design?.width,
@@ -611,6 +618,10 @@ export default function ExportFlow({ project, pricing, user }) {
         customTextRight: design?.customTextRight,
         textColor: design?.textColor,
         fontFamily: design?.fontFamily,
+        logoUrl: design?.logoUrl || '',
+        customPatternUrl: design?.customPatternUrl || '',
+        idCardPhotoUrl: design?.idCard?.photoUrl || '',
+        idCardLogoUrl: design?.idCard?.logoUrl || '',
       }
     };
 
@@ -628,7 +639,7 @@ export default function ExportFlow({ project, pricing, user }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        design: { ...design, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 500000 ? '' : previewImage },
+        design: { ...design, customText: design.customTextLeft || design.customTextCenter || design.customTextRight || '', previewImage: previewImage.length > 1500000 ? '' : previewImage },
         order: { quantity, pricePerUnit: unitPrice, totalPriceInInr: total },
       }),
     }).catch(e => console.warn('Backend unavailable, saved locally.', e));

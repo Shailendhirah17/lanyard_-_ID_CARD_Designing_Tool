@@ -161,9 +161,9 @@ function ElementRenderer({ element, isSelected, onSelect }) {
   );
 }
 
-export default function CenterWorkspace() {
+export default function CenterWorkspace({ stageRef }) {
+  const activeSide = useIdCardDesignerStore(s => s.activeSide);
   const { 
-    activeSide, 
     setActiveSide, 
     flipCard,
     copyFrontToBack,
@@ -295,6 +295,7 @@ export default function CenterWorkspace() {
           style={{ transform: `scale(${zoom})` }}
         >
           <Stage 
+            ref={stageRef}
             width={cardWidth} 
             height={cardHeight} 
             onMouseDown={handleStageClick}

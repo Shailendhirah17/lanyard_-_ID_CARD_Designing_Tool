@@ -23,6 +23,8 @@ export default function Editor() {
   const navigate = useNavigate();
   const stageRef = useRef(null);
   const idCardStageRef = useRef(null);
+  const frontFlatStageRef = useRef(null);
+  const backFlatStageRef = useRef(null);
 
   const design = useConfiguratorStore(s => s.design);
   const saveLocal = useConfiguratorStore(s => s.saveLocal);
@@ -41,6 +43,14 @@ export default function Editor() {
   const [selectedZone, setSelectedZone] = useState(null);
   const [saveState, setSaveState] = useState('saved');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Load project design when activeProject changes
+  useEffect(() => {
+    if (activeProject && activeProject.design) {
+      const applyDesignSnapshot = useConfiguratorStore.getState().applyDesignSnapshot;
+      applyDesignSnapshot(activeProject.design);
+    }
+  }, [activeProject]);
 
   // ⌨️ Keyboard shortcuts
   useEffect(() => {
@@ -105,10 +115,15 @@ export default function Editor() {
 
   const handleExport = (format) => {
     try {
-      const preview = stageRef.current?.toDataURL({ pixelRatio: 1 }) || '';
-      const cardPreview = idCardStageRef.current?.toDataURL({ pixelRatio: 1 }) || '';
+      const preview = stageRef.current?.toDataURL({ pixelRatio: 4.0 }) || '';
+      const cardPreview = idCardStageRef.current?.toDataURL({ pixelRatio: 4.0 }) || '';
+      const flatFront = frontFlatStageRef.current?.toDataURL({ pixelRatio: 4.0 }) || '';
+      const flatBack = backFlatStageRef.current?.toDataURL({ pixelRatio: 4.0 }) || '';
+
       localStorage.setItem('lanyard_temp_preview', preview);
       localStorage.setItem('lanyard_temp_card_preview', cardPreview);
+      localStorage.setItem('lanyard_temp_flat_front_preview', flatFront);
+      localStorage.setItem('lanyard_temp_flat_back_preview', flatBack);
     } catch (e) {
       console.warn('Could not save temp preview', e);
     }
@@ -219,7 +234,7 @@ export default function Editor() {
         onSave={handleSave}
         onPreview={handlePreview}
         onExport={handleExport}
-        onOrder={() => navigate('/export')}
+        onOrder={handleExport}
         saveState={saveState}
         isSaving={isSaving}
       />
@@ -273,22 +288,20 @@ export default function Editor() {
 
           {/* Canvas itself */}
           <div className="flex-1 min-h-0 relative overflow-hidden">
-            {canvasMode === 'flat' && projectType === 'lanyard' ? (
-              /* ── Flat Print Layout fills the canvas ── */
-              <div className="w-full h-full overflow-auto bg-slate-100 flex flex-col">
-                {/* Header bar inside canvas */}
-                <div className="flex items-center gap-2 px-5 py-3 bg-white border-b border-slate-200 shrink-0">
-                  <LayoutTemplate size={14} className="text-indigo-500" />
-                  <span className="text-[13px] font-bold text-slate-800">Flat Print Layout</span>
-                  <span className="ml-2 text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Actual Print Preview</span>
-                  <span className="ml-auto text-[10px] text-slate-400">Front (left) · Back mirror (right)</span>
-                </div>
-                <div className="flex-1 overflow-auto">
-                  <FlatStrapView />
-                </div>
+            <div className={`w-full h-full ${canvasMode === 'flat' && projectType === 'lanyard' ? 'flex flex-col' : 'hidden'}`}>
+              {/* Header bar inside canvas */}
+              <div className="flex items-center gap-2 px-5 py-3 bg-white border-b border-slate-200 shrink-0">
+                <LayoutTemplate size={14} className="text-indigo-500" />
+                <span className="text-[13px] font-bold text-slate-800">Flat Print Layout</span>
+                <span className="ml-2 text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Actual Print Preview</span>
+                <span className="ml-auto text-[10px] text-slate-400">Front (left) · Back mirror (right)</span>
               </div>
-            ) : (
-              /* ── 3D / Hardware canvas ── */
+              <div className="flex-1 overflow-auto bg-slate-100">
+                <FlatStrapView frontStageRef={frontFlatStageRef} backStageRef={backFlatStageRef} />
+              </div>
+            </div>
+
+            <div className={`w-full h-full ${canvasMode === 'flat' && projectType === 'lanyard' ? 'hidden' : 'block'}`}>
               <Suspense fallback={
                 <div className="flex-1 flex items-center justify-center h-full">
                   <div className="flex flex-col items-center gap-3">
@@ -307,7 +320,7 @@ export default function Editor() {
                   onZoneSelect={(zone) => setSelectedZone(zone)}
                 />
               </Suspense>
-            )}
+            </div>
 
             {/* 3D Preview strip toggle button — only in 3D mode */}
             {canvasMode !== 'flat' && (
@@ -369,6 +382,8 @@ export default function Editor() {
             stageRef={stageRef}
           />
         </Suspense>
+        {/* Hidden flat strap view used to capture flat print layout preview */}
+        <FlatStrapView frontStageRef={frontFlatStageRef} backStageRef={backFlatStageRef} />
       </div>
     </div>
   );

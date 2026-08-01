@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, LayoutTemplate, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { getAllTemplates } from '../data/schoolIdTemplates';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import { useProjectStore } from '../store/useProjectStore';
 import { showToast } from '../components/Toast';
 
 const CATEGORIES = [
@@ -85,6 +86,7 @@ export default function Templates() {
   const [category, setCategory] = useState('all');
   const [orientation, setOrientation] = useState('all');
   const setField = useConfiguratorStore(s => s.setField);
+  const { activeProject, updateActiveProject } = useProjectStore();
 
   const allTemplates = useMemo(() => {
     try { return getAllTemplates(); } catch { return []; }
@@ -112,8 +114,41 @@ export default function Templates() {
         const els = template.back.elements.map(el => ({ ...el, id: `${el.id}-${Date.now()}` }));
         setField('idCard.back.elements', els);
       }
-      showToast(`"${template.name}" applied! Opening Design Studio…`, 'success');
-      setTimeout(() => navigate('/studio'), 600);
+
+      // Automatically color the lanyard strap to match the template's accent color
+      const accentColor = template.front?.elements?.find(e => e.type === 'rect' && e.fill && e.fill !== '#ffffff')?.fill;
+      if (accentColor) {
+        setField('lanyardColor', accentColor);
+      }
+
+      if (activeProject && activeProject.type === 'id-card') {
+        const frontElements = template.front?.elements?.map(el => ({ ...el, id: `${el.id}-${Date.now()}` })) || [];
+        const backElements = template.back?.elements?.map(el => ({ ...el, id: `${el.id}-${Date.now()}` })) || [];
+        const cardSettings = {
+          width: 54,
+          height: 86,
+          orientation: template.orientation || 'portrait',
+          background: template.front?.backgroundColor || '#ffffff',
+          material: 'PVC',
+          borderThickness: 3,
+          borderColor: '#4f46e5',
+          roundedCorners: 12,
+          frameStyle: 'corporate',
+          slotType: 'oval',
+          slotColor: '#cbd5e1',
+        };
+        updateActiveProject({
+          design: {
+            frontElements,
+            backElements,
+            cardSettings
+          }
+        });
+      }
+
+      const targetRoute = activeProject?.type === 'id-card' ? '/id-card-designer' : '/editor';
+      showToast(`"${template.name}" applied! Opening Design Editor…`, 'success');
+      setTimeout(() => navigate(targetRoute), 600);
     } catch {
       showToast('Could not apply template', 'error');
     }
