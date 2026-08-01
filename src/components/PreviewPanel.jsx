@@ -32,11 +32,13 @@ import IdCardPreview from './IdCardPreview';
 import StudentWearPreview from './StudentWearPreview';
 import ThreeDBackground from './ThreeDBackground';
 import { Group, Layer, Stage } from 'react-konva';
+import CanvasEditingToolbar from './editor/CanvasEditingToolbar';
 
-function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, onEditStrap, projectType = 'lanyard' }) {
+function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, onEditStrap, projectType = 'lanyard', onZoneSelect: onZoneSelectProp }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activePreviewTab, setActivePreviewTab] = useState(projectType === 'id-card' ? 'idcard' : 'lanyard'); 
   const [containerSize, setContainerSize] = useState({ width: 800, height: 700 });
+  const [selectedZone, setSelectedZone] = useState(null);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -383,7 +385,20 @@ function PreviewPanel({ stageRef, idCardStageRef, zoom, setZoom, currentStep, on
               </div>
             ) : (
               <div className="relative z-10 w-full h-full flex items-center justify-center">
-                <LanyardStage stageRef={stageRef} zoom={zoom} currentStep={currentStep} onEditStrap={onEditStrap} />
+                <CanvasEditingToolbar
+                  selectedZone={selectedZone}
+                  onZoneSelect={(z) => { setSelectedZone(z); onZoneSelectProp?.(z); }}
+                  onClose={() => setSelectedZone(null)}
+                />
+                <LanyardStage
+                  stageRef={stageRef}
+                  zoom={zoom}
+                  currentStep={currentStep}
+                  onEditStrap={onEditStrap}
+                  alwaysShowControls={true}
+                  onZoneSelect={(z) => { setSelectedZone(z); onZoneSelectProp?.(z); }}
+                  externalSelectedZone={selectedZone}
+                />
               </div>
             )}
           </div>

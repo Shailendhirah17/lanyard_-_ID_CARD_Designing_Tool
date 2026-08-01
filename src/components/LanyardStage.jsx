@@ -702,8 +702,11 @@ function LanyardStage({
   showIdCard = false,
   onEditStrap,
   tempDesign,
+  onZoneSelect,
+  alwaysShowControls = false,
+  externalSelectedZone,
 }) {
-  const showControls = currentStep === 2;
+  const showControls = alwaysShowControls || currentStep === 2;
   const storeDesign = useConfiguratorStore((s) => s.design);
   const livePreviewPatch = useConfiguratorStore((s) => s.livePreviewPatch);
   const design = useMemo(() => {
@@ -717,6 +720,11 @@ function LanyardStage({
   const activePattern = getPatternById(design.strapPattern);
   const patternOpacity = design.strapPatternOpacity ?? 0.85;
   const [selectedZone, setSelectedZone] = useState('center');
+  const activeSelectedZone = externalSelectedZone !== undefined ? externalSelectedZone : selectedZone;
+  const handleZoneSelect = (zone) => {
+    setSelectedZone(zone);
+    onZoneSelect?.(zone);
+  };
   const reviewCardMetrics = useMemo(() => {
     const size = cardSizes[design.idCard.size] || cardSizes['86x54'];
     const reviewWidth = Math.max(72, size.width - (SAFETY_MARGIN * 2));
@@ -928,8 +936,8 @@ function LanyardStage({
               strapW={strapW} 
               pattern={activePattern} 
               patternOpacity={patternOpacity} 
-              isSelected={selectedZone === 'left'}
-              onClick={() => setSelectedZone('left')}
+              isSelected={activeSelectedZone === 'left'}
+              onClick={() => handleZoneSelect('left')}
             />
             <UnifiedStrapContent 
               {...leftCL} 
@@ -980,8 +988,8 @@ function LanyardStage({
           strapW={strapW} 
           pattern={activePattern} 
           patternOpacity={patternOpacity} 
-          isSelected={selectedZone === 'center' && !isBackView}
-          onClick={() => !isBackView && setSelectedZone('center')}
+          isSelected={activeSelectedZone === 'center' && !isBackView}
+          onClick={() => !isBackView && handleZoneSelect('center')}
         />
         <UnifiedStrapContent 
           x1={CX - SPREAD + 10} 
@@ -1010,8 +1018,8 @@ function LanyardStage({
               strapW={strapW} 
               pattern={activePattern} 
               patternOpacity={patternOpacity} 
-              isSelected={selectedZone === 'right'}
-              onClick={() => setSelectedZone('right')}
+              isSelected={activeSelectedZone === 'right'}
+              onClick={() => handleZoneSelect('right')}
             />
             <UnifiedStrapContent 
               {...rightCL} 
