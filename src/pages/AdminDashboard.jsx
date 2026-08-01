@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, Package, Truck, CheckCircle2, RefreshCcw, Search, User, MapPin, X, 
   Eye, Info, CreditCard, Palette, Clock, Mail, Phone, Globe, ShieldCheck, Trash2, 
@@ -32,6 +33,7 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -361,7 +363,7 @@ export default function AdminDashboard() {
             {filteredOrders.map((order) => (
               <div 
                 key={order.id} 
-                onClick={() => setSelectedOrder(order)}
+                onClick={() => navigate(`/admin/orders/${order.id}`)}
                 className="bg-slate-800/60 border border-slate-700/70 rounded-3xl p-5 hover:border-indigo-500/50 hover:shadow-xl transition-all flex flex-col group cursor-pointer"
               >
                 {/* Order Top Line */}
@@ -462,7 +464,7 @@ export default function AdminDashboard() {
 
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/admin/orders/${order.id}`); }}
                       className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-500 text-indigo-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                       title="Inspect Specs & Proofs"
                     >
@@ -510,7 +512,7 @@ export default function AdminDashboard() {
                   {filteredOrders.map(order => (
                     <tr 
                       key={order.id} 
-                      onClick={() => setSelectedOrder(order)}
+                      onClick={() => navigate(`/admin/orders/${order.id}`)}
                       className="hover:bg-slate-800/90 transition-colors cursor-pointer"
                     >
                       <td className="px-5 py-4">
@@ -535,7 +537,7 @@ export default function AdminDashboard() {
                       <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/admin/orders/${order.id}`); }}
                             className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-colors cursor-pointer"
                           >
                             Inspect Specs
@@ -564,216 +566,6 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
-
-      {/* ── Technical Specifications Drawer / Modal ── */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-5xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl animate-scale-in">
-            
-            {/* Modal Header */}
-            <div className="h-16 px-6 bg-slate-950 border-b border-slate-800 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold">
-                  <ShieldCheck size={18} />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-white flex items-center gap-2">
-                    Production Proofs & Specs — <span className="font-mono text-indigo-400">{selectedOrder.id}</span>
-                  </h2>
-                  <p className="text-[11px] text-slate-400 font-medium">Customer: {selectedOrder.customer} ({selectedOrder.email})</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowInvoice(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all cursor-pointer"
-                >
-                  <Download size={13} /> Print Invoice
-                </button>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Scroll Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-              
-              {/* Visual Proofing Canvas Grid */}
-              <div>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <Palette size={14} className="text-indigo-400" /> Visual Print Proofs (Click to Zoom & Pan)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* 2D Lanyard Proof */}
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">2D Lanyard Mockup</span>
-                    {selectedOrder.previewImage && selectedOrder.previewImage !== 'Preview too large for storage' ? (
-                      <div className="cursor-zoom-in group relative w-full h-44 flex items-center justify-center bg-slate-900 rounded-xl border border-slate-800 p-2" onClick={() => setZoomImage(selectedOrder.previewImage)}>
-                        <img src={selectedOrder.previewImage} alt="2D Lanyard" className="max-h-full max-w-full object-contain" />
-                        <div className="absolute inset-0 bg-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center text-xs font-bold text-white">
-                          <Maximize2 size={16} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full h-44 bg-slate-900 rounded-xl border border-slate-800 flex flex-col items-center justify-center text-slate-600 text-xs">
-                        No 2D Preview
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Flat Front Layout Proof */}
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Flat Strap Print Layout</span>
-                    {selectedOrder.flatFrontPreview ? (
-                      <div className="cursor-zoom-in group relative w-full h-44 flex items-center justify-center bg-slate-900 rounded-xl border border-slate-800 p-2" onClick={() => setZoomImage(selectedOrder.flatFrontPreview)}>
-                        <img src={selectedOrder.flatFrontPreview} alt="Flat Layout" className="max-h-full max-w-full object-contain" />
-                        <div className="absolute inset-0 bg-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center text-xs font-bold text-white">
-                          <Maximize2 size={16} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full h-44 bg-slate-900 rounded-xl border border-slate-800 flex flex-col items-center justify-center text-slate-600 text-xs">
-                        No Flat Layout
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ID Card Proof */}
-                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">ID Card Proof</span>
-                    {selectedOrder.idCardPreview ? (
-                      <div className="cursor-zoom-in group relative w-full h-44 flex items-center justify-center bg-slate-900 rounded-xl border border-slate-800 p-2" onClick={() => setZoomImage(selectedOrder.idCardPreview)}>
-                        <img src={selectedOrder.idCardPreview} alt="ID Card" className="max-h-full max-w-full object-contain" />
-                        <div className="absolute inset-0 bg-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center text-xs font-bold text-white">
-                          <Maximize2 size={16} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full h-44 bg-slate-900 rounded-xl border border-slate-800 flex flex-col items-center justify-center text-slate-600 text-xs">
-                        No ID Card Preview
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Lanyard Specifications Table */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Palette size={14} className="text-indigo-400" /> Lanyard Production Specifications
-                </h3>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Base Color</span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: selectedOrder.design?.lanyardColor || '#4f46e5' }} />
-                      <span className="font-mono font-bold text-white">{selectedOrder.design?.lanyardColor || '#4f46e5'}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Width & Length</span>
-                    <p className="font-bold text-white mt-1">{selectedOrder.design?.width || '20mm'} · {selectedOrder.design?.length || '38'} in</p>
-                  </div>
-
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Printing Tech</span>
-                    <p className="font-bold text-white mt-1">{selectedOrder.design?.printingMethod || 'Sublimated'}</p>
-                  </div>
-
-                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                    <span className="text-[10px] font-semibold text-slate-400 uppercase">Clip & Hardware</span>
-                    <p className="font-bold text-white mt-1">{selectedOrder.design?.clipType || 'Metal Hook'}</p>
-                  </div>
-                </div>
-
-                {/* Custom Text Blocks Details */}
-                <div className="mt-4 pt-4 border-t border-slate-800/80">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Custom Vector Text Lines</span>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                    <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[9px] text-slate-400 font-semibold uppercase">Left Strap Text</span>
-                      <p className="font-mono font-bold text-indigo-300 mt-1">{selectedOrder.design?.customTextLeft || '(None)'}</p>
-                    </div>
-                    <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[9px] text-slate-400 font-semibold uppercase">Center Strap Logo / Text</span>
-                      <p className="font-mono font-bold text-indigo-300 mt-1">{selectedOrder.design?.customTextCenter || '(None)'}</p>
-                    </div>
-                    <div className="bg-slate-900 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[9px] text-slate-400 font-semibold uppercase">Right Strap Text</span>
-                      <p className="font-mono font-bold text-indigo-300 mt-1">{selectedOrder.design?.customTextRight || '(None)'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ID Card Specifications & Layers */}
-              {selectedOrder.design?.idCard && (
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <CreditCard size={14} className="text-indigo-400" /> ID Card Layer Elements & Specs
-                  </h3>
-
-                  {selectedOrder.design.idCard.front?.elements && (
-                    <div className="space-y-2">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Front Elements ({selectedOrder.design.idCard.front.elements.length})</span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {selectedOrder.design.idCard.front.elements.map((el, i) => (
-                          <div key={i} className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs flex items-center justify-between">
-                            <span className="font-semibold text-slate-300 truncate max-w-[150px]">{el.content || el.type || `Layer ${i + 1}`}</span>
-                            <span className="text-[9px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">{el.type}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Client Assets Download Links */}
-              {(selectedOrder.design?.logoUrl || selectedOrder.design?.customPatternUrl || selectedOrder.design?.idCardPhotoUrl) && (
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <ExternalLink size={14} className="text-indigo-400" /> Client Uploaded Asset Links
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
-                    {selectedOrder.design?.logoUrl && selectedOrder.design?.logoUrl !== 'Stored locally' && (
-                      <a href={selectedOrder.design.logoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-indigo-300 transition-colors">
-                        <Download size={13} /> Download Logo File
-                      </a>
-                    )}
-                    {selectedOrder.design?.customPatternUrl && selectedOrder.design?.customPatternUrl !== 'Stored locally' && (
-                      <a href={selectedOrder.design.customPatternUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-indigo-300 transition-colors">
-                        <Download size={13} /> Download Pattern File
-                      </a>
-                    )}
-                    {selectedOrder.design?.idCardPhotoUrl && selectedOrder.design?.idCardPhotoUrl !== 'Stored locally' && (
-                      <a href={selectedOrder.design.idCardPhotoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-indigo-300 transition-colors">
-                        <Download size={13} /> Download Student Photo
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Shipping & Delivery Address */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <MapPin size={14} className="text-indigo-400" /> Shipping & Delivery Address
-                </h3>
-                <p className="text-sm font-semibold text-white whitespace-pre-wrap">{selectedOrder.shippingAddress || 'Standard Delivery Address provided at checkout.'}</p>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Interactive Zoom & Pan Lightbox Modal ── */}
       {zoomImage && (

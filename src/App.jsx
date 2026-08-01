@@ -15,6 +15,7 @@ import { useIdCardDesignerStore } from './store/useIdCardDesignerStore';
 // ─── Code-split pages ────────────────────────────────────────────
 const Dashboard      = lazy(() => import('./pages/Dashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const AdminOrderDetail = lazy(() => import('./pages/AdminOrderDetail'));
 const Orders         = lazy(() => import('./pages/Orders'));
 const Templates      = lazy(() => import('./pages/Templates'));
 const IdCardPro      = lazy(() => import('./pages/IdCardPro'));
@@ -321,6 +322,11 @@ export default function App() {
             <Route path="/admin" element={
               <RequireAdmin user={user}>
                 <AdminDashboard />
+              </RequireAdmin>
+            } />
+            <Route path="/admin/orders/:id" element={
+              <RequireAdmin user={user}>
+                <AdminOrderDetail />
               </RequireAdmin>
             } />
 
