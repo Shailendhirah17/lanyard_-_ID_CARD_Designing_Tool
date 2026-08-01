@@ -105,8 +105,8 @@ export default function Editor() {
 
   const handleExport = (format) => {
     try {
-      const preview = stageRef.current?.toDataURL({ pixelRatio: 1 }) || '';
-      const cardPreview = idCardStageRef.current?.toDataURL({ pixelRatio: 1 }) || '';
+      const preview = stageRef.current?.toDataURL({ pixelRatio: 0.5 }) || '';
+      const cardPreview = idCardStageRef.current?.toDataURL({ pixelRatio: 0.5 }) || '';
       localStorage.setItem('lanyard_temp_preview', preview);
       localStorage.setItem('lanyard_temp_card_preview', cardPreview);
     } catch (e) {
