@@ -330,6 +330,7 @@ export default function App() {
                   onStart={(type, mode) => {
                     const createProject = useProjectStore.getState().createProject;
                     if (createProject) createProject(type);
+                    useConfiguratorStore.getState().resetDesign();
                     if (mode === 'template') {
                       navigate('/templates');
                     } else if (mode === 'import') {

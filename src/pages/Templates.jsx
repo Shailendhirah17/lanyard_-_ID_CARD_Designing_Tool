@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, LayoutTemplate, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { getAllTemplates } from '../data/schoolIdTemplates';
 import { useConfiguratorStore } from '../store/useConfiguratorStore';
+import { useProjectStore } from '../store/useProjectStore';
 import { showToast } from '../components/Toast';
 
 const CATEGORIES = [
@@ -85,6 +86,7 @@ export default function Templates() {
   const [category, setCategory] = useState('all');
   const [orientation, setOrientation] = useState('all');
   const setField = useConfiguratorStore(s => s.setField);
+  const { activeProject, updateActiveProject } = useProjectStore();
 
   const allTemplates = useMemo(() => {
     try { return getAllTemplates(); } catch { return []; }
@@ -112,6 +114,18 @@ export default function Templates() {
         const els = template.back.elements.map(el => ({ ...el, id: `${el.id}-${Date.now()}` }));
         setField('idCard.back.elements', els);
       }
+
+      // Automatically color the lanyard strap to match the template's accent color
+      const accentColor = template.front?.elements?.find(e => e.type === 'rect' && e.fill && e.fill !== '#ffffff')?.fill;
+      if (accentColor) {
+        setField('lanyardColor', accentColor);
+      }
+
+      // Upgrade project to 'combo' set if started as 'lanyard' so the card is visible
+      if (activeProject && activeProject.type === 'lanyard') {
+        updateActiveProject({ type: 'combo' });
+      }
+
       showToast(`"${template.name}" applied! Opening Design Editor…`, 'success');
       setTimeout(() => navigate('/editor'), 600);
     } catch {

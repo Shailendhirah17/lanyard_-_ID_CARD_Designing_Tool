@@ -44,6 +44,14 @@ export default function Editor() {
   const [saveState, setSaveState] = useState('saved');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Load project design when activeProject changes
+  useEffect(() => {
+    if (activeProject && activeProject.design) {
+      const applyDesignSnapshot = useConfiguratorStore.getState().applyDesignSnapshot;
+      applyDesignSnapshot(activeProject.design);
+    }
+  }, [activeProject]);
+
   // ⌨️ Keyboard shortcuts
   useEffect(() => {
     const undo = useConfiguratorStore.getState().undo;
