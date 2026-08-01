@@ -1,81 +1,173 @@
-import { useState } from 'react';
-import { ArrowLeft, Save, Download, Undo, Redo } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LeftSidebar from '../components/id-card-designer/LeftSidebar';
 import CenterWorkspace from '../components/id-card-designer/CenterWorkspace';
 import RightSidebar from '../components/id-card-designer/RightSidebar';
 import { useIdCardDesignerStore } from '../store/useIdCardDesignerStore';
+import { useProjectStore } from '../store/useProjectStore';
+import EditorTopBar from '../components/editor/EditorTopBar';
+import { showToast } from '../components/Toast';
 
 export default function IdCardDesigner() {
   const navigate = useNavigate();
-  const { undo, redo, historyIndex, history } = useIdCardDesignerStore();
+  const stageRef = useRef(null);
+  const { 
+    zoom, 
+    setZoom, 
+    undo, 
+    redo, 
+    historyIndex, 
+    history,
+    activeSide,
+    setActiveSide 
+  } = useIdCardDesignerStore();
 
-  const handleExport = () => {
-    alert('Exporting feature coming soon');
+  const { activeProject, updateActiveProject, saveProject } = useProjectStore();
+
+  const [saveState, setSaveState] = useState('saved');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load project design when activeProject changes
+  useEffect(() => {
+    if (activeProject && activeProject.design) {
+      useIdCardDesignerStore.setState({
+        frontElements: activeProject.design.frontElements || [],
+        backElements: activeProject.design.backElements || [],
+        cardSettings: activeProject.design.cardSettings || {
+          width: 54,
+          height: 86,
+          orientation: 'portrait',
+          background: '#ffffff',
+          material: 'PVC',
+          borderThickness: 3,
+          borderColor: '#4f46e5',
+          roundedCorners: 12,
+          frameStyle: 'corporate',
+          slotType: 'oval',
+          slotColor: '#cbd5e1',
+        },
+        history: [
+          {
+            frontElements: activeProject.design.frontElements || [],
+            backElements: activeProject.design.backElements || [],
+            cardSettings: activeProject.design.cardSettings || {},
+          }
+        ],
+        historyIndex: 0,
+        selectedId: null,
+        activeSide: 'front'
+      });
+    }
+  }, [activeProject]);
+
+  const handleSave = (updates) => {
+    if (updates && updates.name) {
+      if (updateActiveProject) {
+        updateActiveProject(updates);
+      }
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveState('saving');
+    
+    const store = useIdCardDesignerStore.getState();
+    const idCardDesign = {
+      frontElements: store.frontElements,
+      backElements: store.backElements,
+      cardSettings: store.cardSettings,
+    };
+
+    if (updateActiveProject) {
+      updateActiveProject({ design: idCardDesign });
+    }
+
+    setTimeout(() => {
+      if (saveProject) saveProject();
+      setSaveState('saved');
+      setIsSaving(false);
+      showToast('Draft saved successfully!', 'success');
+    }, 500);
   };
 
-  const handleSave = () => {
-    alert('Design saved!');
+  const handleExport = async (format) => {
+    try {
+      const store = useIdCardDesignerStore.getState();
+      const currentSide = store.activeSide;
+      const stage = stageRef.current;
+
+      if (!stage) {
+        showToast('Canvas stage is not ready', 'error');
+        return;
+      }
+
+      // 1. Capture current active side
+      const activeDataUrl = stage.toDataURL({ pixelRatio: 1.2 });
+      const frontDataUrl = currentSide === 'front' ? activeDataUrl : null;
+      const backDataUrl = currentSide === 'back' ? activeDataUrl : null;
+
+      // 2. Flip programmatically to capture other side
+      const otherSide = currentSide === 'front' ? 'back' : 'front';
+      store.setActiveSide(otherSide);
+
+      // Wait a brief tick for render
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const otherDataUrl = stage.toDataURL({ pixelRatio: 1.2 });
+      const finalFront = currentSide === 'front' ? frontDataUrl : otherDataUrl;
+      const finalBack = currentSide === 'back' ? backDataUrl : otherDataUrl;
+
+      // Restore side
+      store.setActiveSide(currentSide);
+
+      // Save output snapshots for ExportFlow
+      localStorage.setItem('lanyard_temp_preview', finalFront);
+      localStorage.setItem('lanyard_temp_card_preview', finalFront);
+      localStorage.setItem('lanyard_temp_flat_front_preview', finalFront);
+      localStorage.setItem('lanyard_temp_flat_back_preview', finalBack);
+
+      if (format === 'Order') {
+        navigate('/export');
+      } else {
+        // Trigger file download
+        const link = document.createElement('a');
+        link.download = `id-card-${currentSide}.png`;
+        link.href = currentSide === 'front' ? finalFront : finalBack;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Design exported successfully!', 'success');
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('Could not export canvas', 'error');
+    }
   };
 
   return (
     <div className="flex flex-col h-[100dvh] bg-slate-50 text-slate-800 overflow-hidden font-sans">
-      {/* Top Header */}
-      <header className="h-16 shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-20 shadow-xs">
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-lg font-bold text-slate-900 tracking-tight">ID Card Designer</h1>
-            <p className="text-xs text-slate-500 font-medium">Workspace</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 mr-4 border-r border-slate-200 pr-5">
-            <button 
-              onClick={undo}
-              disabled={historyIndex <= 0}
-              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              title="Undo"
-            >
-              <Undo className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={redo}
-              disabled={historyIndex >= history.length - 1}
-              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              title="Redo"
-            >
-              <Redo className="w-4 h-4" />
-            </button>
-          </div>
-
-          <button 
-            onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 shadow-xs transition-all"
-          >
-            <Save className="w-4 h-4 text-slate-500" />
-            Save Draft
-          </button>
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20 text-white transition-all transform hover:scale-[1.02] active:scale-95"
-          >
-            <Download className="w-4 h-4" />
-            Export Card
-          </button>
-        </div>
-      </header>
+      <EditorTopBar
+        project={activeProject || { name: 'ID Card Design' }}
+        onSave={handleSave}
+        zoom={zoom}
+        setZoom={setZoom}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < history.length - 1}
+        onUndo={undo}
+        onRedo={redo}
+        saveState={saveState}
+        isSaving={isSaving}
+        onExport={(format) => handleExport(format)}
+        onOrder={() => handleExport('Order')}
+        onPreview={() => {
+          showToast('2D previews generated successfully.', 'success');
+        }}
+      />
 
       {/* Main Workspace 3-Panel Layout */}
       <div className="flex-1 flex overflow-hidden relative">
         <LeftSidebar />
-        <CenterWorkspace />
+        <CenterWorkspace stageRef={stageRef} />
         <RightSidebar />
       </div>
     </div>

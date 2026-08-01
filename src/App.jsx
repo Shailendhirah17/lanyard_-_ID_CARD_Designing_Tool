@@ -10,6 +10,7 @@ import { PlusCircle, CheckCircle2, X, FileText, Calendar, Truck, ShieldCheck, Lo
 import ToastContainer, { showToast } from './components/Toast';
 import { useAuth } from './hooks/useAuth';
 import { useProjectStore } from './store/useProjectStore';
+import { useIdCardDesignerStore } from './store/useIdCardDesignerStore';
 
 // ─── Code-split pages ────────────────────────────────────────────
 const Dashboard      = lazy(() => import('./pages/Dashboard'));
@@ -331,6 +332,27 @@ export default function App() {
                     const createProject = useProjectStore.getState().createProject;
                     if (createProject) createProject(type);
                     useConfiguratorStore.getState().resetDesign();
+                    useIdCardDesignerStore.setState({
+                      frontElements: [],
+                      backElements: [],
+                      cardSettings: {
+                        width: 54,
+                        height: 86,
+                        orientation: 'portrait',
+                        background: '#ffffff',
+                        material: 'PVC',
+                        borderThickness: 3,
+                        borderColor: '#4f46e5',
+                        roundedCorners: 12,
+                        frameStyle: 'corporate',
+                        slotType: 'oval',
+                        slotColor: '#cbd5e1',
+                      },
+                      history: [],
+                      historyIndex: -1,
+                      selectedId: null,
+                      activeSide: 'front'
+                    });
                     if (mode === 'template') {
                       navigate('/templates');
                     } else if (mode === 'import') {
