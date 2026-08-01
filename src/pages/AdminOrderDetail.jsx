@@ -317,15 +317,15 @@ export default function AdminOrderDetail() {
           <div className="bg-slate-950 border border-slate-800/80 rounded-3xl p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
               <div>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest block">Client Purchase Info</span>
-                <p className="text-xs font-mono text-slate-400 mt-0.5">Ordered on {order.date}</p>
+                <span className="text-xs font-black text-indigo-300 uppercase tracking-widest block">Client Purchase Info</span>
+                <p className="text-sm font-mono text-slate-350 mt-1">Ordered on {order.date}</p>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-slate-400 shrink-0">Stage Status:</span>
+                <span className="text-sm font-bold text-slate-300 shrink-0">Stage Status:</span>
                 <select
                   value={order.status}
                   onChange={(e) => updateOrderStatus(e.target.value)}
-                  className="bg-slate-900 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="bg-slate-900 border border-slate-700 text-slate-200 text-sm font-semibold rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
                 >
                   {STATUS_OPTIONS.map(st => (
                     <option key={st} value={st}>{st}</option>
@@ -336,40 +336,40 @@ export default function AdminOrderDetail() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
               <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Quantity Order</span>
-                <span className="text-xl font-black text-white mt-1 block">{order.design?.quantity || 100} Units</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Quantity Order</span>
+                <span className="text-2xl font-black text-white mt-1 block">{order.design?.quantity || 100} Units</span>
               </div>
               <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Unit Cost</span>
-                <span className="text-xl font-black text-white mt-1 block">{formatCurrency(order.pricing?.unitPrice || 0)}</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Unit Cost</span>
+                <span className="text-2xl font-black text-white mt-1 block">{formatCurrency(order.pricing?.unitPrice || 0)}</span>
               </div>
               <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80">
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block">Total Revenue</span>
-                <span className="text-xl font-black text-emerald-400 mt-1 block">{formatCurrency(order.price || order.pricing?.totalPrice || 0)}</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Revenue</span>
+                <span className="text-2xl font-black text-emerald-400 mt-1 block">{formatCurrency(order.price || order.pricing?.totalPrice || 0)}</span>
               </div>
             </div>
 
             {/* Client Info Grid */}
-            <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-850/80 mt-4 space-y-3">
-              <div className="flex items-center gap-3 text-xs">
-                <User size={14} className="text-indigo-400 shrink-0" />
-                <span className="text-slate-400 w-16">Customer:</span>
-                <span className="font-bold text-slate-200">{order.customer}</span>
+            <div className="bg-slate-900/40 p-4 rounded-2xl border border-slate-850/80 mt-4 space-y-3.5">
+              <div className="flex items-center gap-3 text-sm">
+                <User size={15} className="text-indigo-400 shrink-0" />
+                <span className="text-slate-300 w-20 font-bold">Customer:</span>
+                <span className="font-extrabold text-white">{order.customer}</span>
               </div>
-              <div className="flex items-center gap-3 text-xs">
-                <Mail size={14} className="text-indigo-400 shrink-0" />
-                <span className="text-slate-400 w-16">Email:</span>
-                <span className="font-bold text-slate-200">{order.email}</span>
-                <button onClick={() => copyToClipboard(order.email, 'Email')} className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 ml-auto transition-colors">
-                  <Clipboard size={10} />
+              <div className="flex items-center gap-3 text-sm">
+                <Mail size={15} className="text-indigo-400 shrink-0" />
+                <span className="text-slate-300 w-20 font-bold">Email:</span>
+                <span className="font-extrabold text-white">{order.email}</span>
+                <button onClick={() => copyToClipboard(order.email, 'Email')} className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 ml-auto transition-colors">
+                  <Clipboard size={12} />
                 </button>
               </div>
-              <div className="flex items-center gap-3 text-xs">
-                <MapPin size={14} className="text-indigo-400 shrink-0" />
-                <span className="text-slate-400 w-16 shrink-0">Shipping:</span>
-                <span className="font-semibold text-slate-200 leading-relaxed text-[11px] truncate max-w-[340px]">{order.shippingAddress || 'No shipping address provided'}</span>
-                <button onClick={() => copyToClipboard(order.shippingAddress || '', 'Address')} className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 ml-auto transition-colors shrink-0">
-                  <Clipboard size={10} />
+              <div className="flex items-center gap-3 text-sm">
+                <MapPin size={15} className="text-indigo-400 shrink-0" />
+                <span className="text-slate-300 w-20 font-bold shrink-0">Shipping:</span>
+                <span className="font-bold text-slate-200 leading-relaxed text-xs truncate max-w-[340px]">{order.shippingAddress || 'No shipping address provided'}</span>
+                <button onClick={() => copyToClipboard(order.shippingAddress || '', 'Address')} className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 ml-auto transition-colors shrink-0">
+                  <Clipboard size={12} />
                 </button>
               </div>
             </div>
@@ -381,68 +381,68 @@ export default function AdminOrderDetail() {
               <Palette size={14} className="text-indigo-400" /> Complete Lanyard Specification
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               {/* Strap dimensions */}
-              <div className="bg-slate-900/60 p-4.5 rounded-2xl border border-slate-800/80 space-y-2">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-850 pb-1.5">Strap Dimensions</span>
+              <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800/80 space-y-3">
+                <span className="text-xs font-black text-indigo-300 uppercase tracking-wider block border-b border-slate-800 pb-2">Strap Dimensions</span>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Strap Width:</span>
-                  <span className="font-bold text-slate-200">{design.width || '20mm'}</span>
+                  <span className="text-slate-300 font-semibold">Strap Width:</span>
+                  <span className="font-bold text-white">{design.width || '20mm'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Strap Length:</span>
-                  <span className="font-bold text-slate-200">{design.length || '38'} in</span>
+                  <span className="text-slate-300 font-semibold">Strap Length:</span>
+                  <span className="font-bold text-white">{design.length || '38'} in</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Printing Tech:</span>
-                  <span className="font-bold text-slate-200">{design.printingMethod || 'Sublimated'}</span>
+                  <span className="text-slate-300 font-semibold">Printing Tech:</span>
+                  <span className="font-bold text-white">{design.printingMethod || 'Sublimated'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Lanyard Style:</span>
-                  <span className="font-bold text-slate-200">{design.lanyardStyle || 'Single Ended'}</span>
+                  <span className="text-slate-300 font-semibold">Lanyard Style:</span>
+                  <span className="font-bold text-white">{design.lanyardStyle || 'Single Ended'}</span>
                 </div>
               </div>
 
               {/* Hardware attachment details */}
-              <div className="bg-slate-900/60 p-4.5 rounded-2xl border border-slate-800/80 space-y-2">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-850 pb-1.5">Hardware & Attachments</span>
+              <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800/80 space-y-3">
+                <span className="text-xs font-black text-indigo-300 uppercase tracking-wider block border-b border-slate-800 pb-2">Hardware & Attachments</span>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Clip Attachment:</span>
-                  <span className="font-bold text-slate-200">{design.clipType || 'Metal Hook'}</span>
+                  <span className="text-slate-300 font-semibold">Clip Attachment:</span>
+                  <span className="font-bold text-white">{design.clipType || 'Metal Hook'}</span>
                 </div>
                 <div className="flex justify-between col-span-2">
-                  <span className="text-slate-500">Accessories:</span>
-                  <span className="font-bold text-indigo-300">{(design.accessories || ['Badge Holder']).join(', ')}</span>
+                  <span className="text-slate-300 font-semibold">Accessories:</span>
+                  <span className="font-bold text-indigo-400">{(design.accessories || ['Badge Holder']).join(', ')}</span>
                 </div>
               </div>
 
               {/* Base colors */}
-              <div className="bg-slate-900/60 p-4.5 rounded-2xl border border-slate-800/80 space-y-2 md:col-span-2">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-850 pb-1.5">Base Color Configuration</span>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <span className="text-[9px] text-slate-500 uppercase">Front Color Swatch</span>
-                    <div className="flex items-center gap-2">
-                      <span className="w-4 h-4 rounded-full border border-slate-850/60 shrink-0" style={{ backgroundColor: design.lanyardColor || '#ffffff' }} />
+              <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800/80 space-y-3 md:col-span-2">
+                <span className="text-xs font-black text-indigo-300 uppercase tracking-wider block border-b border-slate-800 pb-2">Base Color Configuration</span>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Front Color Swatch</span>
+                    <div className="flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full border border-slate-750 shrink-0 shadow-md" style={{ backgroundColor: design.lanyardColor || '#ffffff' }} />
                       <div>
-                        <p className="font-mono font-bold text-slate-200">{design.lanyardColor || '#ffffff'}</p>
-                        <p className="text-[8px] text-slate-500">Pantone: {design.pantone || 'White'}</p>
+                        <p className="font-mono font-black text-white">{design.lanyardColor || '#ffffff'}</p>
+                        <p className="text-xs font-semibold text-slate-400">Pantone: {design.pantone || 'White'}</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-1 border-l border-slate-800 pl-4">
-                    <span className="text-[9px] text-slate-500 uppercase">Back Color (Dual-Sided)</span>
+                  <div className="space-y-2 border-l border-slate-800 pl-6">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">Back Color (Dual-Sided)</span>
                     {design.isDualSided ? (
-                      <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 rounded-full border border-slate-850/60 shrink-0" style={{ backgroundColor: design.lanyardColorBack || '#ffffff' }} />
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full border border-slate-750 shrink-0 shadow-md" style={{ backgroundColor: design.lanyardColorBack || '#ffffff' }} />
                         <div>
-                          <p className="font-mono font-bold text-slate-200">{design.lanyardColorBack || '#ffffff'}</p>
-                          <p className="text-[8px] text-slate-500">Pantone: {design.pantoneBack || 'White'}</p>
+                          <p className="font-mono font-black text-white">{design.lanyardColorBack || '#ffffff'}</p>
+                          <p className="text-xs font-semibold text-slate-400">Pantone: {design.pantoneBack || 'White'}</p>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500 italic mt-1">Single Sided Print Mode</p>
+                      <p className="text-xs text-slate-400 italic mt-1">Single Sided Print Mode</p>
                     )}
                   </div>
                 </div>
@@ -450,69 +450,69 @@ export default function AdminOrderDetail() {
 
               {/* Pattern geometries */}
               {(design.strapPattern || design.customPatternUrl) && (
-                <div className="bg-slate-900/60 p-4.5 rounded-2xl border border-slate-800/80 space-y-2 md:col-span-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-850 pb-1.5">Pattern Settings</span>
+                <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800/80 space-y-3 md:col-span-2">
+                  <span className="text-xs font-black text-indigo-300 uppercase tracking-wider block border-b border-slate-800 pb-2">Pattern Settings</span>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <span className="text-[8px] text-slate-500 block uppercase">Strap Pattern</span>
-                      <span className="font-bold text-slate-200">{design.strapPattern || 'Custom Pattern Upload'}</span>
+                      <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">Strap Pattern</span>
+                      <span className="font-bold text-white text-sm mt-0.5 block">{design.strapPattern || 'Custom Pattern Upload'}</span>
                     </div>
                     <div>
-                      <span className="text-[8px] text-slate-500 block uppercase">Opacity</span>
-                      <span className="font-mono font-bold text-slate-200">{Math.round((design.strapPatternOpacity || 0.85) * 100)}%</span>
+                      <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">Opacity</span>
+                      <span className="font-mono font-bold text-white text-sm mt-0.5 block">{Math.round((design.strapPatternOpacity || 0.85) * 100)}%</span>
                     </div>
                     <div>
-                      <span className="text-[8px] text-slate-500 block uppercase">Scale</span>
-                      <span className="font-mono font-bold text-slate-200">{design.patternScale || 100}%</span>
+                      <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">Scale</span>
+                      <span className="font-mono font-bold text-white text-sm mt-0.5 block">{design.patternScale || 100}%</span>
                     </div>
                     <div>
-                      <span className="text-[8px] text-slate-500 block uppercase">Spacing</span>
-                      <span className="font-mono font-bold text-slate-200">{design.patternSpacing || 30}px</span>
+                      <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">Spacing</span>
+                      <span className="font-mono font-bold text-white text-sm mt-0.5 block">{design.patternSpacing || 30}px</span>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Typography Branding Details */}
-              <div className="bg-slate-900/60 p-4.5 rounded-2xl border border-slate-800/80 space-y-2 md:col-span-2">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block border-b border-slate-850 pb-1.5">Custom Typography & Branding</span>
+              <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800/80 space-y-3 md:col-span-2">
+                <span className="text-xs font-black text-indigo-300 uppercase tracking-wider block border-b border-slate-800 pb-2">Custom Typography & Branding</span>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <span className="text-[8px] text-slate-500 block uppercase">Font Family</span>
-                    <span className="font-bold text-slate-200">{design.fontFamily || 'Montserrat'}</span>
+                    <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">Font Family</span>
+                    <span className="font-bold text-white text-sm mt-0.5 block">{design.fontFamily || 'Montserrat'}</span>
                   </div>
                   <div>
-                    <span className="text-[8px] text-slate-500 block uppercase">Text Color</span>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="w-3.5 h-3.5 rounded-full border border-slate-850/60" style={{ backgroundColor: design.textColor || '#000000' }} />
-                      <span className="font-mono font-bold text-slate-200">{design.textColor || '#000000'}</span>
+                    <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">Text Color</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="w-4 h-4 rounded-full border border-slate-750" style={{ backgroundColor: design.textColor || '#000000' }} />
+                      <span className="font-mono font-black text-white text-sm">{design.textColor || '#000000'}</span>
                     </div>
                   </div>
                   <div>
-                    <span className="text-[8px] text-slate-500 block uppercase">Base Size</span>
-                    <span className="font-mono font-bold text-slate-200">{design.fontSize || 18} px</span>
+                    <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">Base Size</span>
+                    <span className="font-mono font-bold text-white text-sm mt-0.5 block">{design.fontSize || 18} px</span>
                   </div>
                   <div>
-                    <span className="text-[8px] text-slate-500 block uppercase">Branding Style</span>
-                    <span className="font-bold text-slate-200 capitalize">{design.lanyardDesignStyle || 'repeated'}</span>
+                    <span className="text-[11px] font-bold text-slate-300 block uppercase tracking-wider">Branding Style</span>
+                    <span className="font-bold text-white text-sm mt-0.5 block capitalize">{design.lanyardDesignStyle || 'repeated'}</span>
                   </div>
                 </div>
 
                 {/* Custom texts */}
-                <div className="mt-3 pt-3 border-t border-slate-800 space-y-2">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Text Strings</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-850 font-mono text-[10px]">
-                      <span className="text-[8px] text-slate-500 block">Left Strap Text</span>
-                      <span className="font-bold text-indigo-300">{design.customTextLeft || '(None)'}</span>
+                <div className="mt-4 pt-4 border-t border-slate-800 space-y-3">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-widest block">Text Strings</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 font-mono text-xs">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-1">Left Strap Text</span>
+                      <span className="font-bold text-indigo-300 text-sm">{design.customTextLeft || '(None)'}</span>
                     </div>
-                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-850 font-mono text-[10px]">
-                      <span className="text-[8px] text-slate-500 block">Center Attachment / Logo Text</span>
-                      <span className="font-bold text-indigo-300">{design.customTextCenter || '(None)'}</span>
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 font-mono text-xs">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-1">Center Attachment / Logo Text</span>
+                      <span className="font-bold text-indigo-300 text-sm">{design.customTextCenter || '(None)'}</span>
                     </div>
-                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-850 font-mono text-[10px]">
-                      <span className="text-[8px] text-slate-500 block">Right Strap Text</span>
-                      <span className="font-bold text-indigo-300">{design.customTextRight || '(None)'}</span>
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-850 font-mono text-xs">
+                      <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider mb-1">Right Strap Text</span>
+                      <span className="font-bold text-indigo-300 text-sm">{design.customTextRight || '(None)'}</span>
                     </div>
                   </div>
                 </div>
@@ -527,23 +527,23 @@ export default function AdminOrderDetail() {
                 <CreditCard size={14} className="text-indigo-400" /> ID Card Specs & Elements
               </h2>
 
-              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 text-xs space-y-3">
+              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 text-sm space-y-3">
                 <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-500">ID Card Size (CR80):</span>
-                  <span className="font-bold text-slate-200">{design.idCard.size || '86x54'} mm</span>
+                  <span className="text-slate-300 font-semibold">ID Card Size (CR80):</span>
+                  <span className="font-bold text-white">{design.idCard.size || '86x54'} mm</span>
                 </div>
 
                 {design.idCard.front?.elements && (
                   <div className="space-y-2">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Front Layout Elements ({design.idCard.front.elements.length})</span>
+                    <span className="text-xs font-black text-indigo-300 uppercase tracking-wider block">Front Layout Elements ({design.idCard.front.elements.length})</span>
                     <div className="space-y-1.5 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                       {design.idCard.front.elements.map((el, i) => (
-                        <div key={el.id || i} className="bg-slate-950 p-2 rounded-xl border border-slate-850 flex items-center justify-between text-[11px]">
+                        <div key={el.id || i} className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 flex items-center justify-between text-xs">
                           <div className="min-w-0">
                             <p className="font-bold text-slate-200 truncate max-w-[200px]">{el.content || el.text || el.id || `Layer ${i + 1}`}</p>
-                            <p className="text-[8px] text-slate-500 font-mono">X: {Math.round(el.x || 0)} · Y: {Math.round(el.y || 0)}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">X: {Math.round(el.x || 0)} · Y: {Math.round(el.y || 0)}</p>
                           </div>
-                          <span className="text-[8px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">
+                          <span className="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">
                             {el.type}
                           </span>
                         </div>
@@ -562,31 +562,31 @@ export default function AdminOrderDetail() {
                 <CreditCard size={14} className="text-indigo-400" /> ID Card Designer Elements
               </h2>
 
-              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 text-xs space-y-3">
+              <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 text-sm space-y-3">
                 <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-500">Card Dimensions:</span>
-                  <span className="font-bold text-slate-200">
+                  <span className="text-slate-300 font-semibold">Card Dimensions:</span>
+                  <span className="font-bold text-white">
                     {order.cardSettings?.width || 54}x{order.cardSettings?.height || 86} mm ({order.cardSettings?.orientation || 'portrait'})
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-500">Material & Border:</span>
-                  <span className="font-bold text-slate-200">
+                  <span className="text-slate-300 font-semibold">Material & Border:</span>
+                  <span className="font-bold text-white">
                     {order.cardSettings?.material || 'PVC'} · Thickness: {order.cardSettings?.borderThickness || 3}px
                   </span>
                 </div>
 
                 {order.frontElements && order.frontElements.length > 0 && (
                   <div className="space-y-2">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Front Card Elements ({order.frontElements.length})</span>
+                    <span className="text-xs font-black text-indigo-300 uppercase tracking-wider block">Front Card Elements ({order.frontElements.length})</span>
                     <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                       {order.frontElements.map((el, i) => (
-                        <div key={el.id || i} className="bg-slate-950 p-2 rounded-xl border border-slate-850 flex items-center justify-between text-[11px]">
+                        <div key={el.id || i} className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 flex items-center justify-between text-xs">
                           <div className="min-w-0">
                             <p className="font-bold text-slate-200 truncate max-w-[200px]">{el.text || el.content || el.id || `Layer ${i + 1}`}</p>
-                            <p className="text-[8px] text-slate-500 font-mono">X: {Math.round(el.x || 0)} · Y: {Math.round(el.y || 0)}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">X: {Math.round(el.x || 0)} · Y: {Math.round(el.y || 0)}</p>
                           </div>
-                          <span className="text-[8px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">
+                          <span className="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">
                             {el.type}
                           </span>
                         </div>
@@ -597,15 +597,15 @@ export default function AdminOrderDetail() {
 
                 {order.backElements && order.backElements.length > 0 && (
                   <div className="space-y-2 mt-4">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Back Card Elements ({order.backElements.length})</span>
+                    <span className="text-xs font-black text-indigo-300 uppercase tracking-wider block">Back Card Elements ({order.backElements.length})</span>
                     <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                       {order.backElements.map((el, i) => (
-                        <div key={el.id || i} className="bg-slate-950 p-2 rounded-xl border border-slate-850 flex items-center justify-between text-[11px]">
+                        <div key={el.id || i} className="bg-slate-950 p-2.5 rounded-xl border border-slate-850 flex items-center justify-between text-xs">
                           <div className="min-w-0">
                             <p className="font-bold text-slate-200 truncate max-w-[200px]">{el.text || el.content || el.id || `Layer ${i + 1}`}</p>
-                            <p className="text-[8px] text-slate-500 font-mono">X: {Math.round(el.x || 0)} · Y: {Math.round(el.y || 0)}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">X: {Math.round(el.x || 0)} · Y: {Math.round(el.y || 0)}</p>
                           </div>
-                          <span className="text-[8px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">
+                          <span className="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 uppercase shrink-0">
                             {el.type}
                           </span>
                         </div>
