@@ -12,7 +12,7 @@ import { useProjectStore } from '../store/useProjectStore';
 const ROUTE_MAP = {
   Dashboard: '/dashboard', NewProject: '/new-project', Editor: '/editor',
   Templates: '/templates', Orders: '/orders', AdminDashboard: '/admin',
-  Customizer: '/studio', IdCardPro: '/bulk-import', ExportFlow: '/export',
+  Customizer: '/editor', IdCardPro: '/bulk-import', ExportFlow: '/export',
 };
 
 // ---- Status colours ----

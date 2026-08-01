@@ -360,22 +360,8 @@ export default function App() {
               </RequireAuth>
             } />
 
-            {/* ── Legacy Customizer (lanyard + ID combo) ── */}
-            <Route path="/studio" element={
-              <RequireAuth user={user}>
-                <div className="h-full">
-                  <CustomizerPage
-                    stageRef={stageRef}
-                    idCardStageRef={idCardStageRef}
-                    zoom={zoom} setZoom={setZoom}
-                    currentStep={currentStep} setCurrentStep={setCurrentStep}
-                    submitDesign={submitDesign}
-                    submitState={submitState}
-                    pricing={pricing}
-                  />
-                </div>
-              </RequireAuth>
-            } />
+            {/* ── Legacy Customizer Redirect ── */}
+            <Route path="/studio" element={<Navigate to="/editor" replace />} />
 
             {/* ── Templates gallery ── */}
             <Route path="/templates" element={

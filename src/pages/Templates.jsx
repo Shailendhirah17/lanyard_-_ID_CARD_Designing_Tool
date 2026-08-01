@@ -112,8 +112,8 @@ export default function Templates() {
         const els = template.back.elements.map(el => ({ ...el, id: `${el.id}-${Date.now()}` }));
         setField('idCard.back.elements', els);
       }
-      showToast(`"${template.name}" applied! Opening Design Studio…`, 'success');
-      setTimeout(() => navigate('/studio'), 600);
+      showToast(`"${template.name}" applied! Opening Design Editor…`, 'success');
+      setTimeout(() => navigate('/editor'), 600);
     } catch {
       showToast('Could not apply template', 'error');
     }
