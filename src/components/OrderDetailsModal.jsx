@@ -116,18 +116,25 @@ export default function OrderDetailsModal({ order, isOpen = true, onClose }) {
             <div className="space-y-6">
               <h3 className="text-lg font-black text-[#1a1a1a] tracking-tight uppercase tracking-widest border-b border-[#eef2f6] pb-4">Design Specification</h3>
               <div className="flex gap-6 items-start">
-                <div className="w-32 h-40 bg-white rounded-[28px] overflow-hidden border border-[#eef2f6] p-2 shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-500 flex items-center justify-center">
-                  {order.previewImage && order.previewImage !== 'Preview too large for storage' ? (
-                    <img src={order.previewImage} alt="Preview" className="w-full h-full object-contain" />
-                  ) : order.idCardPreview && order.idCardPreview !== 'Preview too large for storage' ? (
-                    <img src={order.idCardPreview} alt="Preview" className="w-full h-full object-contain" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-200">
-                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">P</div>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">No Preview</span>
+                {/* All three previews side by side */}
+              <div className="flex gap-2 shrink-0">
+                {[order.previewImage, order.flatFrontPreview, order.idCardPreview].map((src, idx) => {
+                  const labels = ['2D View', 'Flat', 'ID Card'];
+                  const hasImg = src && src !== 'Preview too large for storage';
+                  return (
+                    <div key={idx} className="flex flex-col items-center gap-1">
+                      <div className={`w-24 h-32 bg-white rounded-[20px] overflow-hidden border p-1.5 flex items-center justify-center ${
+                        hasImg ? 'border-[#eef2f6] shadow-inner' : 'border-dashed border-slate-200'
+                      }`}>
+                        {hasImg
+                          ? <img src={src} alt={labels[idx]} className="w-full h-full object-contain" />
+                          : <span className="text-[8px] font-black uppercase tracking-widest text-slate-300">None</span>}
+                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">{labels[idx]}</span>
                     </div>
-                  )}
-                </div>
+                  );
+                })}
+              </div>
                 <div className="space-y-4 flex-1">
                   <div>
                     <h4 className="text-2xl font-black text-[#1a1a1a] tracking-tight">{order.designName}</h4>
@@ -149,70 +156,94 @@ export default function OrderDetailsModal({ order, isOpen = true, onClose }) {
               {/* Complete Specifications Grid */}
               <div className="bg-slate-50 rounded-3xl p-6 border border-[#eef2f6] space-y-4">
                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-[#eef2f6] pb-2">Technical Specifications</h4>
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Width:</span>
-                    <span className="font-bold text-slate-700">{order.design?.width || '20mm'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Length:</span>
-                    <span className="font-bold text-slate-700">{order.design?.length || '38"'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Printing:</span>
-                    <span className="font-bold text-slate-700">{order.design?.printingMethod || 'Sublimated'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Style:</span>
-                    <span className="font-bold text-slate-700">{order.design?.lanyardStyle || 'Single Ended'}</span>
-                  </div>
-                  <div className="flex justify-between">
+                <div className="space-y-2 text-[11px]">
+
+                  {/* Size & Dimensions */}
+                  <p className="text-[9px] font-black text-[#5d5fef] uppercase tracking-widest pb-1 border-b border-[#eef2f6]">📐 Size &amp; Dimensions</p>
+                  <div className="flex justify-between"><span className="text-slate-400">Width:</span><span className="font-bold text-slate-700">{order.design?.width || '20mm'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Length:</span><span className="font-bold text-slate-700">{order.design?.length || '38'}"</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Style:</span><span className="font-bold text-slate-700">{order.design?.lanyardStyle || 'Single Ended'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Material:</span><span className="font-bold text-slate-700">{order.design?.material || 'Polyester'}</span></div>
+
+                  {/* Color & Printing */}
+                  <p className="text-[9px] font-black text-[#5d5fef] uppercase tracking-widest pb-1 pt-2 border-b border-[#eef2f6]">🎨 Color &amp; Printing</p>
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-400">Strap Color:</span>
                     <span className="font-bold text-slate-700 flex items-center gap-1">
                       <span className="w-2.5 h-2.5 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: order.design?.lanyardColor || '#ffffff' }} />
                       {order.design?.lanyardColor || '#ffffff'}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Clip Type:</span>
-                    <span className="font-bold text-slate-700">{order.design?.clipType || 'Metal Hook'}</span>
-                  </div>
-                  <div className="flex justify-between col-span-2">
-                    <span className="text-slate-400">Accessories:</span>
-                    <span className="font-bold text-slate-700">{(order.design?.accessories || ['Badge Holder']).join(', ')}</span>
-                  </div>
-                  {order.design?.customTextLeft || order.design?.customTextCenter || order.design?.customTextRight ? (
-                    <div className="col-span-2 pt-2 border-t border-[#eef2f6] space-y-1">
-                      <span className="text-[10px] text-slate-400 uppercase tracking-widest">Custom Lanyard Text:</span>
-                      <div className="bg-white p-2 rounded-xl border border-slate-200 font-mono text-[10px] text-slate-600 break-all space-y-0.5">
-                        {order.design?.customTextLeft && <p>Left: "{order.design.customTextLeft}"</p>}
-                        {order.design?.customTextCenter && <p>Center: "{order.design.customTextCenter}"</p>}
-                        {order.design?.customTextRight && <p>Right: "{order.design.customTextRight}"</p>}
-                      </div>
+                  {order.design?.isDualSided && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Back Color:</span>
+                      <span className="font-bold text-slate-700 flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: order.design?.lanyardColorBack || '#ffffff' }} />
+                        {order.design?.lanyardColorBack || '#ffffff'}
+                      </span>
                     </div>
-                  ) : null}
-                  {order.design?.idCardSize ? (
-                    <div className="col-span-2 pt-2 border-t border-[#eef2f6] grid grid-cols-2 gap-x-4 gap-y-1.5">
-                      <div className="flex justify-between col-span-2">
-                        <span className="text-slate-400">ID Card Size:</span>
-                        <span className="font-bold text-slate-700">{order.design?.idCardSize}</span>
+                  )}
+                  <div className="flex justify-between"><span className="text-slate-400">Printing Type:</span><span className="font-bold text-slate-700">{order.design?.printingMethod || 'Sublimated'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Dual Sided:</span><span className="font-bold text-slate-700">{order.design?.isDualSided ? 'Yes' : 'No'}</span></div>
+
+                  {/* Hardware */}
+                  <p className="text-[9px] font-black text-[#5d5fef] uppercase tracking-widest pb-1 pt-2 border-b border-[#eef2f6]">🔩 Hardware &amp; Accessories</p>
+                  <div className="flex justify-between"><span className="text-slate-400">Clip Type:</span><span className="font-bold text-slate-700">{order.design?.clipType || 'Metal Hook'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Accessories:</span><span className="font-bold text-slate-700 text-right max-w-[55%]">{Array.isArray(order.design?.accessories) ? order.design.accessories.join(', ') : (order.design?.accessories || 'Badge Holder')}</span></div>
+
+                  {/* Branding */}
+                  {(order.design?.fontFamily || order.design?.customTextLeft || order.design?.customTextCenter || order.design?.customTextRight) && (
+                    <>
+                      <p className="text-[9px] font-black text-[#5d5fef] uppercase tracking-widest pb-1 pt-2 border-b border-[#eef2f6]">✍️ Custom Text &amp; Branding</p>
+                      {order.design?.fontFamily && <div className="flex justify-between"><span className="text-slate-400">Font:</span><span className="font-bold text-slate-700">{order.design.fontFamily}</span></div>}
+                      {(order.design?.customTextLeft || order.design?.customTextCenter || order.design?.customTextRight) && (
+                        <div className="pt-1">
+                          <div className="bg-white p-2 rounded-xl border border-slate-200 font-mono text-[10px] text-slate-600 space-y-0.5">
+                            {order.design?.customTextLeft && <p>Left: "{order.design.customTextLeft}"</p>}
+                            {order.design?.customTextCenter && <p>Center: "{order.design.customTextCenter}"</p>}
+                            {order.design?.customTextRight && <p>Right: "{order.design.customTextRight}"</p>}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Logo upload */}
+                  {order.design?.logoUrl && order.design.logoUrl !== 'Stored locally' && (
+                    <>
+                      <p className="text-[9px] font-black text-[#5d5fef] uppercase tracking-widest pb-1 pt-2 border-b border-[#eef2f6]">🖼 Uploaded Logo</p>
+                      <div className="flex items-center gap-3 py-1">
+                        <img src={order.design.logoUrl} alt="logo" className="w-10 h-10 object-contain rounded-lg bg-slate-100 p-1 border border-slate-200" />
+                        <a href={order.design.logoUrl} download className="text-[11px] text-[#5d5fef] font-bold hover:underline">Download logo file</a>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Front BG:</span>
-                        <span className="font-bold text-slate-700 flex items-center gap-1">
-                          <span className="w-2.5 h-2.5 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: order.design?.idCardFrontBg || '#ffffff' }} />
-                          {order.design?.idCardFrontBg || '#ffffff'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Back BG:</span>
-                        <span className="font-bold text-slate-700 flex items-center gap-1">
-                          <span className="w-2.5 h-2.5 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: order.design?.idCardBackBg || '#ffffff' }} />
-                          {order.design?.idCardBackBg || '#ffffff'}
-                        </span>
-                      </div>
-                    </div>
-                  ) : null}
+                    </>
+                  )}
+
+                  {/* ID Card */}
+                  {(order.design?.idCardSize || order.design?.idCard) && (
+                    <>
+                      <p className="text-[9px] font-black text-[#5d5fef] uppercase tracking-widest pb-1 pt-2 border-b border-[#eef2f6]">🪪 ID Card Details</p>
+                      <div className="flex justify-between"><span className="text-slate-400">Card Size:</span><span className="font-bold text-slate-700">{order.design?.idCard?.size || order.design?.idCardSize || '86×54mm'}</span></div>
+                      {order.design?.idCardFrontBg && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-400">Front BG:</span>
+                          <span className="font-bold text-slate-700 flex items-center gap-1">
+                            <span className="w-2.5 h-2.5 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: order.design?.idCardFrontBg || '#ffffff' }} />
+                            {order.design?.idCardFrontBg}
+                          </span>
+                        </div>
+                      )}
+                      {order.design?.idCardBackBg && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-400">Back BG:</span>
+                          <span className="font-bold text-slate-700 flex items-center gap-1">
+                            <span className="w-2.5 h-2.5 rounded-full border border-slate-300 shrink-0" style={{ backgroundColor: order.design?.idCardBackBg || '#ffffff' }} />
+                            {order.design?.idCardBackBg}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
